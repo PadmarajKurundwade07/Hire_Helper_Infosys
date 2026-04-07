@@ -1,0 +1,13 @@
+[dotenv@17.3.1] injecting env (12) from .env -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ΓÜí∩╕Å secrets for agents: https://dotenvx.com/as2
+Server is running on port 5000
+Error acquiring client error: password authentication failed for user "postgres"
+    at parseErrorMessage (D:\Hire Helper\Backend\node_modules\pg-protocol\dist\parser.js:305:11)
+    at Parser.handlePacket (D:\Hire Helper\Backend\node_modules\pg-protocol\dist\parser.js:143:27)
+    at Parser.parse (D:\Hire Helper\Backend\node_modules\pg-protocol\dist\parser.js:37:38)
+    at Socket.<anonymous> (D:\Hire Helper\Backend\node_modules\pg-protocol\dist\index.js:11:42)
+    at Socket.emit (node:events:518:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at TCP.onStreamRead (node:internal/stream_base_commons:189:23)
