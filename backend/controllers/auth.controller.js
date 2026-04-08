@@ -60,8 +60,8 @@ exports.register = async (req, res) => {
 
         res.status(201).json({ msg: 'User registered successfully. Please verify OTP sent to email.', user: newUser });
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        console.error(err.message, err.stack);
+        res.status(500).json({ msg: err.message, stack: err.stack });
     }
 };
 

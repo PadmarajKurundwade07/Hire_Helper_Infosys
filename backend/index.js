@@ -66,8 +66,13 @@ TEST ROUTE
 =================================
 */
 
-app.get('/', (req, res) => {
-  res.send('HireHelper API is running...');
+app.get('/', async (req, res) => {
+  try {
+    await pool.query('SELECT NOW()');
+    res.json({ msg: 'HireHelper API is running... DB IS CONNECTED!' });
+  } catch (err) {
+    res.json({ msg: 'HireHelper API is running... BUT DB IS BROKEN or DISCONNECTED! Error: ' + err.message, stack: err.stack });
+  }
 });
 
 /*
