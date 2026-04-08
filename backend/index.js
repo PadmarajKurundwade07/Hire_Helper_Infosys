@@ -77,6 +77,50 @@ app.get('/', async (req, res) => {
 
 /*
 =================================
+HEALTH CHECK / DIAGNOSTIC ENDPOINT
+=================================
+*/
+app.get('/api/health', async (req, res) => {
+  const diagnostics = {
+    status: 'running',
+    timestamp: new Date().toISOString(),
+    node_env: process.env.NODE_ENV,
+    port: PORT,
+    database: {
+      configured: false,
+      connected: false,
+      details: {}
+    }
+  };
+
+  // Check if DATABASE_URL is set
+  if (process.env.DATABASE_URL) {
+    diagnostics.database.configured = true;
+    diagnostics.database.details.method = 'DATABASE_URL';
+  } else if (process.env.DB_HOST) {
+    diagnostics.database.configured = true;
+    diagnostics.database.details.method = 'Individual env vars';
+    diagnostics.database.details.host = process.env.DB_HOST;
+    diagnostics.database.details.database = process.env.DB_NAME;
+    diagnostics.database.details.user = process.env.DB_USER ? 'set' : 'not set';
+    diagnostics.database.details.port = process.env.DB_PORT;
+  }
+
+  // Try to connect to database
+  try {
+    const result = await pool.query('SELECT NOW()');
+    diagnostics.database.connected = true;
+    diagnostics.database.details.timestamp = result.rows[0].now;
+  } catch (err) {
+    diagnostics.database.connected = false;
+    diagnostics.database.details.error = err.message;
+  }
+
+  res.json(diagnostics);
+});
+
+/*
+=================================
 SERVER
 =================================
 */
