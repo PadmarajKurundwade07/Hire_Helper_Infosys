@@ -1,16 +1,10 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jwt-simple');
-const { Pool } = require('pg');
+
 const sendEmail = require('../utils/email');
 require('dotenv').config();
 
-const pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    password: process.env.DB_PASSWORD,
-    port: process.env.DB_PORT,
-});
+const pool = require('../db');
 
 exports.register = async (req, res) => {
     const { first_name, last_name, phone_number, email_id, password } = req.body;

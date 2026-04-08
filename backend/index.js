@@ -1,7 +1,7 @@
 const express = require('express');
 const authRoutes = require('./routes/auth.routes');
 const cors = require('cors');
-const { Pool } = require('pg');
+
 require('dotenv').config();
 
 const app = express();
@@ -33,16 +33,7 @@ app.use('/uploads', express.static('uploads'));
 DATABASE CONNECTION
 =================================
 */
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
+const pool = require('./db');
 pool.connect((err, client, release) => {
   if (err) {
     console.error('Error acquiring client (DB Authentication failed?):', err.message);
