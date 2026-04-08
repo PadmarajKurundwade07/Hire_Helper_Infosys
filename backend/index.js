@@ -31,10 +31,17 @@ app.use('/uploads', express.static('uploads'));
 
 /*
 =================================
-DATABASE CONNECTION
+DATABASE CONNECTION & MIGRATIONS
 =================================
 */
 const pool = require('./db');
+const { runMigrations } = require('./migrate');
+
+// Run migrations on startup
+(async () => {
+  await runMigrations();
+})();
+
 pool.connect((err, client, release) => {
   if (err) {
     console.error('Error acquiring client (DB Authentication failed?):', err.message);
