@@ -18,7 +18,8 @@ Allow frontend from:
 app.use(cors({
   origin: [
     "http://localhost:4200",
-    "https://hire-helper-infosys.vercel.app"
+    "https://hire-helper-infosys.vercel.app",
+    "https://hire-helper-infosys-crmiu7fwc.vercel.app"
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true

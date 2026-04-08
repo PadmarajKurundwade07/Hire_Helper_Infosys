@@ -104,7 +104,7 @@ export class LoginComponent {
     this.forgotMsg = '';
     this.forgotError = false;
 
-    this.http.post(`${environment.apiUrl}/api/auth/forgot-password`, { email_id: this.resetEmail }).subscribe({
+    this.http.post(`${environment.apiUrl}/auth/forgot-password`, { email_id: this.resetEmail }).subscribe({
       next: (res: any) => {
         this.isLoading = false;
         this.forgotMsg = res?.msg || 'OTP sent to your email!';
@@ -129,7 +129,7 @@ export class LoginComponent {
     this.forgotMsg = '';
     this.forgotError = false;
 
-    this.http.post(`${environment.apiUrl}/api/auth/reset-password`, {
+    this.http.post(`${environment.apiUrl}/auth/reset-password`, {
       email_id: this.resetEmail,
       otp: this.resetOtp,
       new_password: this.resetNewPassword,

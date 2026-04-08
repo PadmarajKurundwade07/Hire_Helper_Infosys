@@ -17,7 +17,7 @@ export class AuthService {
   https://hire-helper-infosys.onrender.com/api/auth
   */
 
-  private apiUrl = `${environment.apiUrl}/api/auth`;
+  private apiUrl = `${environment.apiUrl}/auth`;
 
   constructor(private http: HttpClient) {}
 
@@ -81,7 +81,7 @@ export class AuthService {
   */
 
   getMe(): Observable<any> {
-    return this.http.get(`${environment.apiUrl}/api/users/me`);
+    return this.http.get(`${environment.apiUrl}/users/me`);
   }
 
   /*
@@ -93,7 +93,7 @@ export class AuthService {
 
   updateProfile(formData: FormData): Observable<any> {
 
-    return this.http.put(`${environment.apiUrl}/api/users/me`, formData).pipe(
+    return this.http.put(`${environment.apiUrl}/users/me`, formData).pipe(
 
       tap((res: any) => {
 
@@ -118,7 +118,7 @@ export class AuthService {
 
   updateSettings(settings: any): Observable<any> {
 
-    return this.http.put(`${environment.apiUrl}/api/users/settings`, settings);
+    return this.http.put(`${environment.apiUrl}/users/settings`, settings);
 
   }
 
