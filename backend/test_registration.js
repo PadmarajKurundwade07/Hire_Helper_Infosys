@@ -6,7 +6,7 @@ async function testRegistration() {
         const randomStr = Math.random().toString(36).substring(7);
         const email = `testuser_${randomStr}@example.com`;
         
-        const response = await axios.post('http://localhost:5000/api/auth/register', {
+        const response = await axios.post('https://hire-helper-infosys.onrender.com/api/auth/register', {
             first_name: "John",
             last_name: "Doe",
             phone_number: "1234567890",

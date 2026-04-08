@@ -84,6 +84,20 @@ app.get('/', async (req, res) => {
 
 /*
 =================================
+MIGRATION DEBUG ENDPOINT
+=================================
+*/
+app.get('/api/migrate', async (req, res) => {
+  try {
+    const result = await runMigrations();
+    res.json({ success: result, msg: 'Migration triggered. Check console for internal logs if success is false, or wait! I should modify runMigrations to return the error!' });
+  } catch(e) {
+    res.status(500).json({ error: e.message, stack: e.stack });
+  }
+});
+
+/*
+=================================
 HEALTH CHECK / DIAGNOSTIC ENDPOINT
 =================================
 */

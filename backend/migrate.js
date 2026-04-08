@@ -35,7 +35,7 @@ async function runMigrations() {
     return true;
   } catch (err) {
     console.error('✗ Error running migrations:', err.message);
-    return false;
+    return { success: false, error: err.message, stack: err.stack };
   } finally {
     await pool.end();
   }
