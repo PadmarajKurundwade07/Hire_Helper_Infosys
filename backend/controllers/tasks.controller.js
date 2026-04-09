@@ -151,11 +151,11 @@ exports.requestTask = async (req, res) => {
         const owner = ownerInfo.rows[0];
         if (owner.email_notifications) {
           const sendEmail = require('../utils/email');
-          await sendEmail({
+          sendEmail({
             email: owner.email_id,
             subject: 'New Help Offer for your Task!',
             html: `Hi ${owner.first_name},<br><br>Someone has just requested to help with your task "${owner.title}".<br>Log in to your dashboard to review their offer and message.<br><br>Best,<br>HireHelper Team`
-          });
+          }).catch(err => console.error('Error sending task offer email:', err.message));
         }
       }
     } catch (emailErr) {
@@ -278,20 +278,20 @@ exports.updateRequestStatus = async (req, res) => {
       try {
         const sendEmail = require('../utils/email');
         if (status === 'accepted') {
-          await sendEmail({
+          sendEmail({
              email: row.requester_email,
              subject: 'Your Request to Help was Accepted!',
              html: `Good news! Your request to help with the task "${row.title}" has been accepted. The task is now marked as closed.`
-          });
+          }).catch(err => console.error('Error sending accepted email:', err.message));
         } else if (status === 'rejected') {
-          await sendEmail({
+          sendEmail({
              email: row.requester_email,
              subject: 'Update on your Request to Help',
              html: `Your offer to help with the task "${row.title}" has been declined by the owner.`
-          });
+          }).catch(err => console.error('Error sending rejected email:', err.message));
         }
       } catch (emailErr) {
-        console.error('Error sending status email:', emailErr);
+        console.error('Error preparing status email:', emailErr);
       }
     }
 
@@ -416,13 +416,13 @@ exports.replyToRequest = async (req, res) => {
     if (notifyFlag) {
       try {
         const sendEmail = require('../utils/email');
-        await sendEmail({
+        sendEmail({
           email: recipientEmail,
           subject: `New Reply regarding task: "${row.title}"`,
           html: `Hi ${recipientName},<br><br>${senderName} has sent a new message regarding the task "${row.title}":<br><br>"${reply_message}"<br><br>Log in to your dashboard to view the conversation and reply back!`
-        });
+        }).catch(err => console.error('Error sending conversation email:', err.message));
       } catch (err) {
-        console.error('Error sending conversation email:', err);
+        console.error('Error preparing conversation email:', err);
       }
     }
 

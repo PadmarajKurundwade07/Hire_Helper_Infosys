@@ -1,37 +1,47 @@
-const sgMail = require('@sendgrid/mail');
+const { Resend } = require("resend");
 
-// Initialize SendGrid with API key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// Initialize Resend with API key
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async (options) => {
     try {
-        console.log(`\n📧 Sending email via SendGrid to: ${options.email}`);
+        console.log(`\n📧 Sending email via Resend to: ${options.email}`);
+        console.log(`📝 Subject: ${options.subject}`);
 
-        // Check if API key is set
-        if (!process.env.SENDGRID_API_KEY) {
-            throw new Error('SENDGRID_API_KEY not set in environment variables');
+        if (!process.env.RESEND_API_KEY) {
+            throw new Error("RESEND_API_KEY is not configured");
         }
 
-        const msg = {
+        if (!process.env.EMAIL_FROM) {
+            throw new Error("EMAIL_FROM is not configured");
+        }
+
+        // Send email using Resend
+        const result = await resend.emails.send({
+            from: process.env.EMAIL_FROM,
             to: options.email,
-            from: process.env.SENDGRID_FROM_EMAIL || 'noreply@hirehelper.com',
             subject: options.subject,
             html: options.html,
-        };
+        });
 
-        const response = await sgMail.send(msg);
+        console.log("✅ EMAIL SENT SUCCESSFULLY VIA RESEND!");
+        console.log(`Message ID: ${result.id}`);
+        console.log(`Response:`, result);
+        console.log("");
 
-        console.log('✅ EMAIL SENT SUCCESSFULLY VIA SENDGRID!');
-        console.log(`Response: ${response[0].statusCode}\n`);
         return true;
     } catch (error) {
-        console.error('\n❌ ERROR SENDING EMAIL VIA SENDGRID:');
-        console.error('Error:', error.message);
+        console.error("\n❌ ERROR SENDING EMAIL VIA RESEND:");
+        console.error("Error Message:", error.message);
+        console.error("Error:", error);
 
-        if (error.message.includes('SENDGRID_API_KEY')) {
-            console.error('\n⚠️  SENDGRID_API_KEY not configured!');
-            console.error('Set it in Render environment variables');
-        }
+        console.error("\n⚠️  Configuration Check:");
+        console.error(
+            `  RESEND_API_KEY set: ${process.env.RESEND_API_KEY ? "YES" : "NO"}`
+        );
+        console.error(
+            `  EMAIL_FROM set: ${process.env.EMAIL_FROM ? "YES (" + process.env.EMAIL_FROM + ")" : "NO"}`
+        );
 
         return false;
     }
