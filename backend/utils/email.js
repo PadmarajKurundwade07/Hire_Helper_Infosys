@@ -44,7 +44,7 @@ const sendEmail = async (options) => {
         console.log(`✉️  Sent to: ${options.email}`);
         console.log(`🆔 Message ID: ${info.messageId}`);
         console.log('----------------------------------------------------\n');
-        
+
         return true;
     } catch (error) {
         console.error('\n❌ CRITICAL: Error sending OTP email directly to Gmail.');
@@ -57,6 +57,7 @@ const sendEmail = async (options) => {
         console.error('  - Pass:', process.env.SMTP_PASS ? '***' : 'NOT SET');
         console.error('👉 Make sure your Google App Password is set correctly in .env file');
         console.error('👉 Gmail App Password should be 16 characters without spaces when copied');
+        console.error('Full error:', error);
         return false;
     }
 };

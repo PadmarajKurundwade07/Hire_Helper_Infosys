@@ -70,16 +70,22 @@ export class ProfileComponent implements OnInit {
   }
 
   toggleEdit() {
-    this.isEditing = !this.isEditing;
-    if (!this.isEditing) {
-      this.fetchProfile();
-      this.selectedFile = null;
-      this.passwordInput = '';
-      this.confirmPasswordInput = '';
-      const storedProfDetails = localStorage.getItem('professionalDetails');
-      if (storedProfDetails) {
-        this.professionalDetails = JSON.parse(storedProfDetails);
+    if (this.isEditing) {
+      // User is trying to cancel - ask for confirmation
+      if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+        this.isEditing = false;
+        this.fetchProfile();
+        this.selectedFile = null;
+        this.passwordInput = '';
+        this.confirmPasswordInput = '';
+        const storedProfDetails = localStorage.getItem('professionalDetails');
+        if (storedProfDetails) {
+          this.professionalDetails = JSON.parse(storedProfDetails);
+        }
       }
+    } else {
+      // User is entering edit mode
+      this.isEditing = true;
     }
   }
 
@@ -91,6 +97,11 @@ export class ProfileComponent implements OnInit {
   saveProfile() {
     if (this.passwordMismatch) {
       this.modalService.show('Error', this.labels.passwordMismatch || 'Passwords do not match!', 'error');
+      return;
+    }
+
+    // Ask for confirmation before saving
+    if (!confirm('Are you sure you want to save these changes?')) {
       return;
     }
 
