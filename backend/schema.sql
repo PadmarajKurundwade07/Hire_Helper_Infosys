@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
   otp VARCHAR(6),
   otp_expiry TIMESTAMP,
   is_verified BOOLEAN DEFAULT FALSE,
+  email_notifications BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -24,6 +25,7 @@ CREATE TABLE IF NOT EXISTS task (
   end_time TIMESTAMP,
   status VARCHAR(50) DEFAULT 'open',
   picture VARCHAR(255),
+  pay VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -40,7 +42,9 @@ CREATE TABLE IF NOT EXISTS requests (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   task_id UUID REFERENCES task(id) ON DELETE CASCADE,
   requester_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  status VARCHAR(50) DEFAULT 'pending', -- pending, accepted, rejected
+  status VARCHAR(50) DEFAULT 'pending',
+  message TEXT,
+  reply_message TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(task_id, requester_id)
 );
