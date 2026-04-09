@@ -64,9 +64,9 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-block" [disabled]="registerForm.invalid || isLoading">
-                    <span *ngIf="!isLoading">Register</span>
-                    <span *ngIf="isLoading"><span class="spinner"></span> Processing...</span>
+                <button type="submit" class="btn btn-primary btn-block" [disabled]="registerForm.invalid || isRegisterLoading">
+                    <span *ngIf="!isRegisterLoading">Register</span>
+                    <span *ngIf="isRegisterLoading"><span class="spinner"></span> Processing...</span>
                 </button>
 
                 <div class="text-center mt-3">
@@ -82,9 +82,9 @@
                         placeholder="Enter 6-digit OTP" maxlength="6" style="letter-spacing: 5px; font-size: 20px;">
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-block" [disabled]="otpForm.invalid || isLoading">
-                    <span *ngIf="!isLoading">Verify Code</span>
-                    <span *ngIf="isLoading"><span class="spinner"></span> Verifying...</span>
+                <button type="submit" class="btn btn-primary btn-block" [disabled]="otpForm.invalid || isOtpLoading">
+                    <span *ngIf="!isOtpLoading">Verify Code</span>
+                    <span *ngIf="isOtpLoading"><span class="spinner"></span> Verifying...</span>
                 </button>
             </form>
 

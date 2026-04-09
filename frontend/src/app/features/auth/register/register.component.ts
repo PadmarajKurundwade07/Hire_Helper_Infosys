@@ -16,7 +16,11 @@ export class RegisterComponent {
   otpForm: FormGroup;
   errorMsg = '';
   successMsg = '';
-  isLoading = false;
+
+  // Separate loading states
+  isRegisterLoading = false;
+  isOtpLoading = false;
+
   step = 1; // 1 = Registration, 2 = OTP Verification
 
   constructor(
@@ -39,16 +43,16 @@ export class RegisterComponent {
 
   onRegister() {
     if (this.registerForm.valid) {
-      this.isLoading = true;
+      this.isRegisterLoading = true;
       this.errorMsg = '';
       this.authService.register(this.registerForm.value).subscribe({
         next: (res) => {
-          this.isLoading = false;
+          this.isRegisterLoading = false;
           this.successMsg = res.msg;
           this.step = 2; // Move to OTP step
         },
         error: (err) => {
-          this.isLoading = false;
+          this.isRegisterLoading = false;
           this.errorMsg = err.error?.msg || 'Registration failed. Please try again.';
         }
       });
@@ -57,21 +61,21 @@ export class RegisterComponent {
 
   onVerifyOtp() {
     if (this.otpForm.valid) {
-      this.isLoading = true;
+      this.isOtpLoading = true;
       this.errorMsg = '';
       const email = this.registerForm.get('email_id')?.value;
       const otp = this.otpForm.get('otp')?.value;
 
       this.authService.verifyOtp(email, otp).subscribe({
         next: (res) => {
-          this.isLoading = false;
+          this.isOtpLoading = false;
           this.successMsg = 'Verification successful! Redirecting to login...';
           setTimeout(() => {
             this.router.navigate(['/login']);
-          }, 2000);
+          }, 1000);
         },
         error: (err) => {
-          this.isLoading = false;
+          this.isOtpLoading = false;
           this.errorMsg = err.error?.msg || 'OTP Verification failed.';
         }
       });

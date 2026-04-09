@@ -19,7 +19,13 @@ export class LoginComponent {
   otpForm: FormGroup;
   errorMsg = '';
   successMsg = '';
-  isLoading = false;
+
+  // Separate loading states for each operation
+  isLoginLoading = false;
+  isOtpLoading = false;
+  isForgotPasswordLoading = false;
+  isResetPasswordLoading = false;
+
   showOtpForm = false;
 
   // Forgot Password - Step 1
@@ -56,16 +62,16 @@ export class LoginComponent {
 
   onSubmit() {
     if (this.loginForm.valid) {
-      this.isLoading = true;
+      this.isLoginLoading = true;
       this.errorMsg = '';
       this.successMsg = '';
       this.authService.login(this.loginForm.value).subscribe({
         next: (res) => {
-          this.isLoading = false;
+          this.isLoginLoading = false;
           this.router.navigate(['/dashboard']);
         },
         error: (err) => {
-          this.isLoading = false;
+          this.isLoginLoading = false;
           this.errorMsg = err.error?.msg || 'Login failed. Please check your credentials.';
           if (err.status === 403 || this.errorMsg.toLowerCase().includes('verify')) {
             this.showOtpForm = true;
@@ -77,7 +83,7 @@ export class LoginComponent {
 
   onVerifyOtp() {
     if (this.otpForm.valid) {
-      this.isLoading = true;
+      this.isOtpLoading = true;
       this.errorMsg = '';
       this.successMsg = '';
       const email = this.loginForm.get('email_id')?.value;
@@ -85,13 +91,13 @@ export class LoginComponent {
 
       this.authService.verifyOtp(email, otp).subscribe({
         next: (res) => {
-          this.isLoading = false;
+          this.isOtpLoading = false;
           this.successMsg = 'Verification successful! Logging you in...';
           this.showOtpForm = false;
-          setTimeout(() => this.onSubmit(), 1000);
+          setTimeout(() => this.onSubmit(), 500);
         },
         error: (err) => {
-          this.isLoading = false;
+          this.isOtpLoading = false;
           this.errorMsg = err.error?.msg || 'OTP Verification failed.';
         }
       });
@@ -100,23 +106,23 @@ export class LoginComponent {
 
   onForgotPassword() {
     if (!this.resetEmail) return;
-    this.isLoading = true;
+    this.isForgotPasswordLoading = true;
     this.forgotMsg = '';
     this.forgotError = false;
 
     this.http.post(`${environment.apiUrl}/auth/forgot-password`, { email_id: this.resetEmail }).subscribe({
       next: (res: any) => {
-        this.isLoading = false;
+        this.isForgotPasswordLoading = false;
         this.forgotMsg = res?.msg || 'OTP sent to your email!';
         this.forgotError = false;
         // Move to step 2 after success
         setTimeout(() => {
           this.showResetForm = true;
           this.forgotMsg = '';
-        }, 1500);
+        }, 1000);
       },
       error: (err) => {
-        this.isLoading = false;
+        this.isForgotPasswordLoading = false;
         this.forgotMsg = err?.error?.msg || 'Failed to send reset email.';
         this.forgotError = true;
       }
@@ -125,7 +131,7 @@ export class LoginComponent {
 
   onResetPassword() {
     if (this.resetPasswordMismatch) return;
-    this.isLoading = true;
+    this.isResetPasswordLoading = true;
     this.forgotMsg = '';
     this.forgotError = false;
 
@@ -136,7 +142,7 @@ export class LoginComponent {
       confirm_password: this.resetConfirmPassword
     }).subscribe({
       next: (res: any) => {
-        this.isLoading = false;
+        this.isResetPasswordLoading = false;
         this.forgotMsg = res?.msg || 'Password reset successfully!';
         this.forgotError = false;
         // Go back to login after success
@@ -149,10 +155,10 @@ export class LoginComponent {
           this.resetConfirmPassword = '';
           this.forgotMsg = '';
           this.successMsg = 'Password reset successfully! You can now login.';
-        }, 2000);
+        }, 1000);
       },
       error: (err) => {
-        this.isLoading = false;
+        this.isResetPasswordLoading = false;
         this.forgotMsg = err?.error?.msg || 'Failed to reset password.';
         this.forgotError = true;
       }
