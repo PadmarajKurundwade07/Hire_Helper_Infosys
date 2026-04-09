@@ -1,35 +1,38 @@
-const nodemailer = require('nodemailer');
-require('dotenv').config();
+const sgMail = require('@sendgrid/mail');
+
+// Initialize SendGrid with API key
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const sendEmail = async (options) => {
     try {
-        console.log(`\n📧 Sending OTP email to: ${options.email}`);
+        console.log(`\n📧 Sending email via SendGrid to: ${options.email}`);
 
-        // Simple, proven approach - create fresh transporter
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
-            }
-        });
+        // Check if API key is set
+        if (!process.env.SENDGRID_API_KEY) {
+            throw new Error('SENDGRID_API_KEY not set in environment variables');
+        }
 
-        // Send the email
-        const info = await transporter.sendMail({
-            from: `"Hire Helper" <${process.env.SMTP_USER}>`,
+        const msg = {
             to: options.email,
+            from: process.env.SENDGRID_FROM_EMAIL || 'noreply@hirehelper.com',
             subject: options.subject,
             html: options.html,
-        });
+        };
 
-        console.log('✅ EMAIL SENT SUCCESSFULLY!');
-        console.log(`Message ID: ${info.messageId}\n`);
+        const response = await sgMail.send(msg);
+
+        console.log('✅ EMAIL SENT SUCCESSFULLY VIA SENDGRID!');
+        console.log(`Response: ${response[0].statusCode}\n`);
         return true;
     } catch (error) {
-        console.error('\n❌ ERROR SENDING EMAIL');
+        console.error('\n❌ ERROR SENDING EMAIL VIA SENDGRID:');
         console.error('Error:', error.message);
-        console.error('SMTP User:', process.env.SMTP_USER);
-        console.error('SMTP Pass set:', !!process.env.SMTP_PASS);
+
+        if (error.message.includes('SENDGRID_API_KEY')) {
+            console.error('\n⚠️  SENDGRID_API_KEY not configured!');
+            console.error('Set it in Render environment variables');
+        }
+
         return false;
     }
 };
