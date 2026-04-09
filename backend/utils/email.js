@@ -7,13 +7,18 @@ const sendEmail = async (options) => {
         console.log(`\n📧 Attempting to send email to: ${options.email}`);
         console.log(`📝 Subject: ${options.subject}`);
 
-        // Create transporter using Gmail service
+        // Create transporter using Gmail service with IPv4 forced
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
                 user: process.env.SMTP_USER,
                 pass: process.env.SMTP_PASS,
-            }
+            },
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false,
+            family: 4, // Force IPv4 (Render might have IPv6 issues)
+            connectionUrl: 'smtp://smtp.gmail.com:587'
         });
 
         // Send email
