@@ -33,8 +33,8 @@ exports.register = async (req, res) => {
 
         const newUser = newUserResult.rows[0];
 
-        // 5. Send OTP via Email using utility
-        const emailSent = await sendEmail({
+        // 5. Send OTP email ASYNCHRONOUSLY (don't wait, return response immediately)
+        sendEmail({
             email: email_id,
             subject: 'Verify your HireHelper Account',
             html: `
@@ -52,11 +52,7 @@ exports.register = async (req, res) => {
           </div>
         </div>
       `,
-        });
-
-        if (!emailSent) {
-             return res.status(500).json({ msg: 'Failed to send OTP email.' });
-        }
+        }).catch(err => console.error('Error sending registration email:', err.message));
 
         res.status(201).json({ msg: 'User registered successfully. Please verify OTP sent to email.', user: newUser });
     } catch (err) {
@@ -91,8 +87,8 @@ exports.login = async (req, res) => {
 
             await pool.query('UPDATE users SET otp = $1, otp_expiry = $2 WHERE id = $3', [otp, otp_expiry, user.id]);
 
-            // Send Email using utility
-            await sendEmail({
+            // Send Email ASYNCHRONOUSLY (don't wait)
+            sendEmail({
                 email: email_id,
                 subject: 'Verify your HireHelper Account - Fresh OTP',
                 html: `
@@ -110,7 +106,7 @@ exports.login = async (req, res) => {
               </div>
             </div>
           `,
-            });
+            }).catch(err => console.error('Error sending OTP email during login:', err.message));
 
             return res.status(403).json({ msg: 'Unverified! A fresh OTP has been sent to your email.' });
         }
@@ -181,8 +177,8 @@ exports.forgotPassword = async (req, res) => {
 
         await pool.query('UPDATE users SET otp = $1, otp_expiry = $2 WHERE id = $3', [otp, otp_expiry, user.id]);
 
-        // Send password reset email
-        const emailSent = await sendEmail({
+        // Send password reset email ASYNCHRONOUSLY (don't wait)
+        sendEmail({
             email: email_id,
             subject: 'HireHelper - Password Reset OTP',
             html: `
@@ -200,11 +196,7 @@ exports.forgotPassword = async (req, res) => {
           </div>
         </div>
       `,
-        });
-
-        if (!emailSent) {
-            return res.status(500).json({ msg: 'Failed to send reset OTP email.' });
-        }
+        }).catch(err => console.error('Error sending password reset email:', err.message));
 
         res.json({ msg: 'A password reset OTP has been sent to your email.' });
     } catch (err) {
