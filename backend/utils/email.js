@@ -2,42 +2,70 @@ const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 // ⚡ OPTIMIZATION: Create transporter ONCE and reuse it for all emails
-// This prevents creating new SMTP connections for every email (massive performance improvement)
 let transporter = null;
+let isVerified = false;
 
 const getTransporter = () => {
     if (!transporter) {
+        console.log('🔌 Creating Nodemailer transporter...');
         transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST || 'smtp.gmail.com',
             port: process.env.SMTP_PORT || 587,
-            secure: false, // true for 465, false for other ports
+            secure: false,
             auth: {
                 user: process.env.SMTP_USER,
                 pass: process.env.SMTP_PASS,
             },
-            // ⚡ Connection pooling for faster email delivery
+            // ⚡ Connection pooling settings
             pool: true,
-            maxConnections: 5,
-            maxMessages: 100,
+            maxConnections: 3,
+            maxMessages: 50,
             rateDelta: 1000,
-            rateLimit: 10 // 10 emails per second max
+            rateLimit: 5,
+            // Add timeout for connection
+            connectionTimeout: 5000,
+            socketTimeout: 5000
         });
-        console.log('✅ Nodemailer transporter initialized with connection pooling');
+
+        // Verify connection on startup
+        transporter.verify((error, success) => {
+            if (error) {
+                console.error('❌ SMTP Connection Failed:', error.message);
+                isVerified = false;
+            } else {
+                console.log('✅ SMTP Connection Verified - Ready to send emails');
+                isVerified = true;
+            }
+        });
     }
     return transporter;
 };
 
 const sendEmail = async (options) => {
     try {
-        // ⚡ Reuse transporter instead of creating new one each time
         const transporter = getTransporter();
-                            
-        const info = await transporter.sendMail({
-            from: `"Hire Helper OTP Verification" <${process.env.SMTP_USER}>`,
-            to: options.email,
-            subject: options.subject,
-            html: options.html,
+
+        // Add a timeout wrapper for the email sending
+        const sendWithTimeout = new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject(new Error('Email sending timeout - took longer than 10 seconds'));
+            }, 10000);
+
+            transporter.sendMail({
+                from: `"Hire Helper OTP Verification" <${process.env.SMTP_USER}>`,
+                to: options.email,
+                subject: options.subject,
+                html: options.html,
+            }).then(info => {
+                clearTimeout(timeout);
+                resolve(info);
+            }).catch(err => {
+                clearTimeout(timeout);
+                reject(err);
+            });
         });
+
+        const info = await sendWithTimeout;
         
         console.log('\n----------------------------------------------------');
         console.log('✅ OTP EMAIL SUCCESSFULLY DISPATCHED TO THE REAL MAILBOX!');
