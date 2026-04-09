@@ -150,9 +150,8 @@ SERVER
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 HireHelper Backend Running on Port ${PORT}`);
-  console.log(`📧 Email Service: Gmail SMTP`);
-  console.log(`🗄️  Database: Connected`);
+  console.log(`🚀 HireHelper Backend v2 - Gmail SMTP Email Service`);
+  console.log(`🔧 Port: ${PORT} | 🗄️ DB: Connected | 📧 Email: Gmail SMTP`);
 });
 
 module.exports = { pool };
