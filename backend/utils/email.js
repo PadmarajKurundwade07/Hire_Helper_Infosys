@@ -1,55 +1,35 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// Simple, direct email sending - using Gmail service for reliability
 const sendEmail = async (options) => {
     try {
-        console.log(`\n📧 Attempting to send email to: ${options.email}`);
-        console.log(`📝 Subject: ${options.subject}`);
+        console.log(`\n📧 Sending OTP email to: ${options.email}`);
 
-        // Create transporter - Try port 465 with SSL (more reliable on Render)
+        // Simple, proven approach - create fresh transporter
         const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 465,
-            secure: true, // SSL/TLS required
+            service: 'gmail',
             auth: {
                 user: process.env.SMTP_USER,
                 pass: process.env.SMTP_PASS,
-            },
-            family: 4, // Force IPv4
-            connectionTimeout: 10000,
-            socketTimeout: 10000
+            }
         });
 
-        // Send email
+        // Send the email
         const info = await transporter.sendMail({
-            from: `"Hire Helper OTP Verification" <${process.env.SMTP_USER}>`,
+            from: `"Hire Helper" <${process.env.SMTP_USER}>`,
             to: options.email,
             subject: options.subject,
             html: options.html,
         });
 
-        console.log('\n✅ EMAIL SENT SUCCESSFULLY!');
-        console.log(`Message ID: ${info.messageId}`);
-        console.log(`Response: ${info.response}\n`);
-
+        console.log('✅ EMAIL SENT SUCCESSFULLY!');
+        console.log(`Message ID: ${info.messageId}\n`);
         return true;
     } catch (error) {
-        console.error('\n❌ ERROR SENDING EMAIL:');
-        console.error('Error Message:', error.message);
-        console.error('Error Code:', error.code);
-
-        console.error('\nCredentials Debug:');
-        console.error(`  SMTP_USER set: ${process.env.SMTP_USER ? 'YES (' + process.env.SMTP_USER + ')' : 'NO'}`);
-        console.error(`  SMTP_PASS set: ${process.env.SMTP_PASS ? 'YES (' + process.env.SMTP_PASS.length + ' chars)' : 'NO'}`);
-
-        if (error.code === 'EAUTH') {
-            console.error('\n⚠️  Authentication failed! Check Gmail App Password.');
-            console.error('Make sure password has NO SPACES and is correct.');
-        }
-
-        console.error('\nFull error:', error.stack);
-
+        console.error('\n❌ ERROR SENDING EMAIL');
+        console.error('Error:', error.message);
+        console.error('SMTP User:', process.env.SMTP_USER);
+        console.error('SMTP Pass set:', !!process.env.SMTP_PASS);
         return false;
     }
 };
