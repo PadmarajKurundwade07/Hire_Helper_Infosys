@@ -3,7 +3,7 @@ services:
     name: hirehelper-backend
     env: node
     region: singapore
-    buildCommand: npm install
+    buildCommand: npm ci --no-cache && npm install
     startCommand: node index.js
     envVars:
       - key: NODE_ENV
