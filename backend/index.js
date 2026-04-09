@@ -98,43 +98,44 @@ app.get('/api/migrate', async (req, res) => {
 
 /*
 =================================
-HEALTH CHECK / DIAGNOSTIC ENDPOINT
+ENVIRONMENT DIAGNOSTICS ENDPOINT
 =================================
 */
-app.get('/api/health', async (req, res) => {
+app.get('/api/diagnostics', async (req, res) => {
   const diagnostics = {
     status: 'running',
     timestamp: new Date().toISOString(),
-    node_env: process.env.NODE_ENV,
-    port: PORT,
+    environment: {
+      NODE_ENV: process.env.NODE_ENV,
+      PORT: process.env.PORT
+    },
     database: {
-      configured: false,
-      connected: false,
-      details: {}
+      configured: !!process.env.DATABASE_URL || !!process.env.DB_HOST,
+      method: process.env.DATABASE_URL ? 'DATABASE_URL' : 'Individual env vars'
+    },
+    email: {
+      service: 'Resend',
+      resend_api_key_set: !!process.env.RESEND_API_KEY,
+      resend_api_key_length: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.length : 0,
+      email_from_set: !!process.env.EMAIL_FROM,
+      email_from_value: process.env.EMAIL_FROM || 'NOT SET',
+      fallback_sendgrid_key_set: !!process.env.SENDGRID_API_KEY,
+      smtp_host: process.env.SMTP_HOST || 'NOT SET'
+    },
+    jwt: {
+      jwt_secret_set: !!process.env.JWT_SECRET,
+      jwt_secret_length: process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0
     }
   };
 
-  // Check if DATABASE_URL is set
-  if (process.env.DATABASE_URL) {
-    diagnostics.database.configured = true;
-    diagnostics.database.details.method = 'DATABASE_URL';
-  } else if (process.env.DB_HOST) {
-    diagnostics.database.configured = true;
-    diagnostics.database.details.method = 'Individual env vars';
-    diagnostics.database.details.host = process.env.DB_HOST;
-    diagnostics.database.details.database = process.env.DB_NAME;
-    diagnostics.database.details.user = process.env.DB_USER ? 'set' : 'not set';
-    diagnostics.database.details.port = process.env.DB_PORT;
-  }
-
-  // Try to connect to database
+  // Try database connection
   try {
     const result = await pool.query('SELECT NOW()');
     diagnostics.database.connected = true;
-    diagnostics.database.details.timestamp = result.rows[0].now;
+    diagnostics.database.timestamp = result.rows[0].now;
   } catch (err) {
     diagnostics.database.connected = false;
-    diagnostics.database.details.error = err.message;
+    diagnostics.database.error = err.message;
   }
 
   res.json(diagnostics);

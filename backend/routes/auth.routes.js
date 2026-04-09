@@ -18,15 +18,32 @@ router.post('/forgot-password', authController.forgotPassword);
 // Reset Password with OTP
 router.post('/reset-password', authController.resetPassword);
 
-// ⚡ DIAGNOSTIC: Test email configuration
+// ⚡ DIAGNOSTIC: Test email configuration with detailed logging
 router.post('/test-email', async (req, res) => {
   try {
-    const testEmail = 'umoney2004@gmail.com';
+    const testEmail = req.body.email || 'umoney2004@gmail.com';
 
     console.log('\n🧪 TESTING EMAIL CONFIGURATION...');
     console.log(`📧 Test email recipient: ${testEmail}`);
-    console.log(`📝 SMTP_USER: ${process.env.SMTP_USER}`);
-    console.log(`📝 SMTP_PASS length: ${process.env.SMTP_PASS ? process.env.SMTP_PASS.length : 'NOT SET'}`);
+    console.log(`🔑 RESEND_API_KEY configured: ${!!process.env.RESEND_API_KEY}`);
+    console.log(`📧 EMAIL_FROM: ${process.env.EMAIL_FROM || 'NOT SET'}`);
+    console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
+
+    if (!process.env.RESEND_API_KEY) {
+      return res.status(400).json({
+        success: false,
+        message: 'RESEND_API_KEY not configured in environment variables',
+        fix: 'Add RESEND_API_KEY to Render dashboard environment variables'
+      });
+    }
+
+    if (!process.env.EMAIL_FROM) {
+      return res.status(400).json({
+        success: false,
+        message: 'EMAIL_FROM not configured in environment variables',
+        fix: 'Add EMAIL_FROM to Render dashboard environment variables'
+      });
+    }
 
     const result = await sendEmail({
       email: testEmail,
@@ -37,6 +54,12 @@ router.post('/test-email', async (req, res) => {
           <p>This is a test email from HireHelper backend.</p>
           <p><strong>If you received this email, the email system is working correctly!</strong></p>
           <p>Sent at: ${new Date().toISOString()}</p>
+          <hr>
+          <p style="font-size: 12px; color: #999;">
+            From: ${process.env.EMAIL_FROM}<br>
+            Service: Resend<br>
+            Environment: ${process.env.NODE_ENV}
+          </p>
         </div>
       `
     });
@@ -45,14 +68,19 @@ router.post('/test-email', async (req, res) => {
       console.log('✅ Test email sent successfully!');
       res.json({
         success: true,
-        message: 'Test email sent successfully! Check your inbox (umoney2004@gmail.com)',
-        timestamp: new Date().toISOString()
+        message: `Test email sent successfully! Check your inbox (${testEmail})`,
+        details: {
+          recipient: testEmail,
+          sender: process.env.EMAIL_FROM,
+          service: 'Resend',
+          timestamp: new Date().toISOString()
+        }
       });
     } else {
       console.log('❌ Test email failed to send');
       res.status(500).json({
         success: false,
-        message: 'Test email failed - check backend logs for details',
+        message: 'Test email failed - check backend logs for Resend API errors',
         timestamp: new Date().toISOString()
       });
     }
@@ -61,7 +89,8 @@ router.post('/test-email', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Test failed: ' + err.message,
-      error: err.message
+      error: err.message,
+      hint: 'Check if RESEND_API_KEY and EMAIL_FROM are set in Render environment'
     });
   }
 });
