@@ -1,12 +1,13 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-const sendEmail = async (options) => {
-    try {
-        // We ensure we ONLY use the real Gmail SMTP configuration provided.
-        // It strictly requires a valid SMTP_USER and an SMTP_PASS 
-        // generated from Google Account App Passwords.
-        const transporter = nodemailer.createTransport({
+// ⚡ OPTIMIZATION: Create transporter ONCE and reuse it for all emails
+// This prevents creating new SMTP connections for every email (massive performance improvement)
+let transporter = null;
+
+const getTransporter = () => {
+    if (!transporter) {
+        transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST || 'smtp.gmail.com',
             port: process.env.SMTP_PORT || 587,
             secure: false, // true for 465, false for other ports
@@ -14,7 +15,22 @@ const sendEmail = async (options) => {
                 user: process.env.SMTP_USER,
                 pass: process.env.SMTP_PASS,
             },
+            // ⚡ Connection pooling for faster email delivery
+            pool: true,
+            maxConnections: 5,
+            maxMessages: 100,
+            rateDelta: 1000,
+            rateLimit: 10 // 10 emails per second max
         });
+        console.log('✅ Nodemailer transporter initialized with connection pooling');
+    }
+    return transporter;
+};
+
+const sendEmail = async (options) => {
+    try {
+        // ⚡ Reuse transporter instead of creating new one each time
+        const transporter = getTransporter();
                             
         const info = await transporter.sendMail({
             from: `"Hire Helper OTP Verification" <${process.env.SMTP_USER}>`,
