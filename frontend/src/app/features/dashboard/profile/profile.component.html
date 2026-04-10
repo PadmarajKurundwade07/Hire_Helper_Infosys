@@ -40,7 +40,7 @@
                     <div class="info-group form-grid-full">
                         <label>{{ labels.emailAddress || 'Email Address' }} <span style="font-size: 0.8em; color: gray;">(Cannot be changed)</span></label>
                         <div class="info-value" *ngIf="!isEditing">{{ user.email_id }}</div>
-                        <input *ngIf="isEditing" type="email" [value]="user.email_id" name="email_id" class="form-control" disabled style="background-color: #eee; cursor: not-allowed;">
+                        <input *ngIf="isEditing" type="email" [value]="user.email_id" name="email_id" class="form-control" disabled style="background-color: #eee; cursor: not-allowed !important; pointer-events: none;">
                     </div>
 
                     <div class="info-group form-grid-full">
@@ -119,5 +119,56 @@
                 </button>
             </div>
         </form>
-    </div>
-</div>
+
+        <!-- Change Password Section (Outside of Edit Mode) -->
+        <div style="margin-top: 30px; border-top: 1px solid var(--border-color, #eaeaea); padding-top: 25px;" *ngIf="!isEditing">
+            <h3 style="margin-bottom: 15px; font-size: 1.1rem; color: var(--text-color);">{{ labels.securitySettings || 'Security Settings' }}</h3>
+
+            <div *ngIf="!showChangePasswordForm" style="text-align: center; padding: 20px; background: #f9fafb; border-radius: 8px;">
+                <p style="margin: 0 0 15px 0; color: #718096;">{{ labels.changePasswordHint || 'Change your password to keep your account secure.' }}</p>
+                <button (click)="initiatePasswordChange()" class="btn btn-primary" type="button">
+                    {{ labels.changePassword || 'Change Password' }}
+                </button>
+            </div>
+
+            <!-- OTP Verification for Password Change -->
+            <div *ngIf="showChangePasswordForm && !passwordChangeVerified" style="background: #f9fafb; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <h4 style="margin-top: 0; color: var(--text-color);">Verify with OTP</h4>
+                <p style="color: #718096; font-size: 14px;">An OTP has been sent to {{ user.email_id }}</p>
+
+                <div style="margin-top: 15px;">
+                    <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600; font-size: 14px;">OTP Code</label>
+                    <input type="text" [(ngModel)]="passwordChangeOTP" placeholder="Enter 6-digit OTP" class="form-control" style="max-width: 300px;">
+                </div>
+
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <button (click)="verifyPasswordChangeOTP()" class="btn btn-success" type="button" style="flex: 1; max-width: 150px;">Verify OTP</button>
+                    <button (click)="cancelPasswordChange()" class="btn btn-cancel" type="button" style="flex: 1; max-width: 150px;">Cancel</button>
+                </div>
+            </div>
+
+            <!-- Password Change Form -->
+            <div *ngIf="showChangePasswordForm && passwordChangeVerified" style="background: #f9fafb; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <h4 style="margin-top: 0; color: var(--text-color);">Set New Password</h4>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600; font-size: 14px;">New Password</label>
+                    <input type="password" [(ngModel)]="newPasswordForChange" placeholder="Enter new password" class="form-control">
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600; font-size: 14px;">Confirm Password</label>
+                    <input type="password" [(ngModel)]="confirmPasswordForChange" placeholder="Confirm new password" class="form-control">
+                </div>
+
+                <div *ngIf="newPasswordForChange && newPasswordForChange !== confirmPasswordForChange" class="password-error">
+                    Passwords do not match.
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button (click)="saveNewPassword()" class="btn btn-success" type="button" [disabled]="!newPasswordForChange || newPasswordForChange !== confirmPasswordForChange" style="flex: 1; max-width: 150px;">Save Password</button>
+                    <button (click)="cancelPasswordChange()" class="btn btn-cancel" type="button" style="flex: 1; max-width: 150px;">Cancel</button>
+                </div>
+            </div>
+        </div>
+

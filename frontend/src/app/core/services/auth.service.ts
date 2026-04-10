@@ -29,6 +29,25 @@ export class AuthService {
     );
   }
 
+  forgotPassword(email_id: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/forgot-password`, {
+      email_id
+    }).pipe(
+      timeout(this.requestTimeout)
+    );
+  }
+
+  resetPassword(email_id: string, otp: string, new_password: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/reset-password`, {
+      email_id,
+      otp,
+      new_password,
+      confirm_password: new_password
+    }).pipe(
+      timeout(this.requestTimeout)
+    );
+  }
+
   login(credentials: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/login`, credentials).pipe(
       timeout(this.requestTimeout),
