@@ -1,21 +1,11 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-// Initialize Gmail SMTP transporter
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: process.env.SMTP_PORT || 587,
-    secure: false,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-    logger: true,
-    debug: true
-});
+// Initialize Resend with API Key from environment variables
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async (options) => {
     console.log("\n" + "=".repeat(70));
-    console.log("📧 EMAIL SERVICE ACTIVATED - GMAIL SMTP");
+    console.log("📧 EMAIL SERVICE ACTIVATED - RESEND");
     console.log("=".repeat(70));
 
     try {
@@ -25,33 +15,29 @@ const sendEmail = async (options) => {
 
         // Check environment variables
         console.log("\n🔍 ENVIRONMENT CHECK:");
-        console.log(`  ✓ SMTP_HOST: ${process.env.SMTP_HOST ? "✅ SET" : "❌ MISSING"}`);
-        console.log(`  ✓ SMTP_PORT: ${process.env.SMTP_PORT ? "✅ SET" : "❌ MISSING"}`);
-        console.log(`  ✓ SMTP_USER: ${process.env.SMTP_USER ? "✅ SET (" + process.env.SMTP_USER + ")" : "❌ MISSING"}`);
-        console.log(`  ✓ SMTP_PASS: ${process.env.SMTP_PASS ? "✅ SET (length: " + process.env.SMTP_PASS.length + ")" : "❌ MISSING"}`);
+        console.log(`  ✓ RESEND_API_KEY: ${process.env.RESEND_API_KEY ? "✅ SET" : "❌ MISSING"}`);
+        console.log(`  ✓ EMAIL_FROM: ${process.env.EMAIL_FROM ? "✅ SET (" + process.env.EMAIL_FROM + ")" : "❌ MISSING"}`);
 
-        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-            throw new Error("CRITICAL: SMTP credentials missing from environment!");
+        if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {
+            throw new Error("CRITICAL: Resend credentials missing from environment!");
         }
 
-        console.log(`\n🚀 CONNECTING TO GMAIL SMTP...`);
-        console.log(`  Host: ${process.env.SMTP_HOST || "smtp.gmail.com"}`);
-        console.log(`  Port: ${process.env.SMTP_PORT || 587}`);
-        console.log(`  User: ${process.env.SMTP_USER}`);
+        console.log(`\n🚀 SENDING EMAIL VIA RESEND...`);
 
         // Send email
-        const result = await transporter.sendMail({
-            from: process.env.SMTP_USER,
+        const data = await resend.emails.send({
+            from: process.env.EMAIL_FROM,
             to: options.email,
             subject: options.subject,
             html: options.html,
         });
 
-        console.log(`\n✅ SUCCESS! EMAIL SENT VIA GMAIL SMTP`);
-        console.log(`  📮 Message ID: ${result.messageId}`);
-        console.log(`  👤 From: ${result.envelope.from}`);
-        console.log(`  👥 To: ${result.envelope.to.join(", ")}`);
-        console.log(`  ⏱️  Time: ${result.messageTime}ms`);
+        if (data.error) {
+            throw new Error(`Resend API Error: ${data.error.message}`);
+        }
+
+        console.log(`\n✅ SUCCESS! EMAIL SENT VIA RESEND`);
+        console.log(`  📮 Response ID: ${data.data?.id}`);
         console.log("=".repeat(70) + "\n");
 
         return true;

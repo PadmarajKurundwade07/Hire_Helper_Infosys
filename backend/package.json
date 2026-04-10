@@ -1,6 +1,6 @@
 {
   "name": "backend",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -12,7 +12,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "resend": "^3.0.0",
     "axios": "^1.14.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
@@ -22,7 +21,8 @@
     "jwt-simple": "^0.5.6",
     "multer": "^2.1.1",
     "nodemailer": "^8.0.2",
-    "pg": "^8.19.0"
+    "pg": "^8.19.0",
+    "resend": "^3.5.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
