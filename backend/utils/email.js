@@ -22,11 +22,18 @@ const sendEmail = async (options) => {
             throw new Error("CRITICAL: Resend credentials missing from environment!");
         }
 
+        // Clean up EMAIL_FROM - remove angle brackets if present
+        let fromEmail = process.env.EMAIL_FROM;
+        if (fromEmail.includes('<') && fromEmail.includes('>')) {
+            fromEmail = fromEmail.match(/<([^>]+)>/)[1];
+            console.log(`  ℹ️ Cleaned EMAIL_FROM: ${fromEmail}`);
+        }
+
         console.log(`\n🚀 SENDING EMAIL VIA RESEND...`);
 
         // Send email
         const data = await resend.emails.send({
-            from: process.env.EMAIL_FROM,
+            from: fromEmail,
             to: options.email,
             subject: options.subject,
             html: options.html,
