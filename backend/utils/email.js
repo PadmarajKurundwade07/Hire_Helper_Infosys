@@ -1,7 +1,17 @@
 const { Resend } = require("resend");
+const nodemailer = require("nodemailer");
 
 // Initialize Resend with API Key from environment variables
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Initialize Gmail SMTP as fallback
+const gmailTransporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+    }
+});
 
 const sendEmail = async (options) => {
     console.log("\n" + "=".repeat(70));
@@ -50,12 +60,35 @@ const sendEmail = async (options) => {
         return true;
 
     } catch (error) {
-        console.error(`\n❌ ERROR SENDING EMAIL`);
+        console.error(`\n❌ ERROR SENDING EMAIL VIA RESEND`);
         console.error(`  Error: ${error.message}`);
-        console.error(`  Type: ${error.name}`);
-        console.error(`  Stack: ${error.stack}`);
-        console.error("=".repeat(70) + "\n");
-        return false;
+
+        // FALLBACK: Try Gmail SMTP
+        console.log("\n🔄 FALLBACK: Attempting to send via Gmail SMTP...");
+        try {
+            if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+                throw new Error("Gmail SMTP credentials not configured");
+            }
+
+            let fromEmail = process.env.SMTP_USER;
+
+            await gmailTransporter.sendMail({
+                from: fromEmail,
+                to: options.email,
+                subject: options.subject,
+                html: options.html
+            });
+
+            console.log(`\n✅ SUCCESS! EMAIL SENT VIA GMAIL SMTP`);
+            console.log("=".repeat(70) + "\n");
+            return true;
+
+        } catch (smtpError) {
+            console.error(`\n❌ GMAIL SMTP ALSO FAILED`);
+            console.error(`  Error: ${smtpError.message}`);
+            console.error("=".repeat(70) + "\n");
+            return false;
+        }
     }
 };
 
