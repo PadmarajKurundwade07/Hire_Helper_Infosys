@@ -32,7 +32,7 @@ const sendEmail = async (options) => {
 
         // Send email via Gmail SMTP
         await gmailTransporter.sendMail({
-            from: process.env.SMTP_USER,
+            from: `Hire Helper <${process.env.SMTP_USER}>`,
             to: options.email,
             subject: options.subject,
             html: options.html
