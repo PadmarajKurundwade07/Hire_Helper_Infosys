@@ -4,7 +4,6 @@ const authController = require('../controllers/auth.controller');
 const sendEmail = require('../utils/email');
 const auth = require('../middlewares/auth.middleware');
 const pool = require('../db');
-const { Resend } = require('resend');
 
 // Register a new user
 router.post('/register', authController.register);
@@ -32,16 +31,23 @@ router.post("/send-change-password-otp", auth, async (req, res) => {
         
         await pool.query('UPDATE users SET otp = $1, otp_expiry = $2 WHERE email_id = $3', [otp, otp_expiry, email]);
         
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        await resend.emails.send({
-            from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
-            to: email,
+        await sendEmail({
+            email: email,
             subject: "Hire Helper Password Change OTP",
             html: `
-                <p>Password Change Request</p>
-                <p>Your OTP is:</p>
-                <h1>${otp}</h1>
-                <p>Valid for 10 minutes</p>
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                  <div style="background-color: #4CAF50; padding: 20px; text-align: center;">
+                    <h1 style="color: #fff; margin: 0;">Password Reset Request</h1>
+                  </div>
+                  <div style="padding: 20px; text-align: center;">
+                    <p style="font-size: 16px; color: #333;">We received a request to change your password.</p>
+                    <p style="font-size: 16px; color: #333;">Your OTP is:</p>
+                    <div style="margin: 20px auto; padding: 15px; border-radius: 5px; background-color: #f4f4f4; border: 1px dashed #4CAF50; display: inline-block;">
+                      <h2 style="margin: 0; color: #4CAF50; letter-spacing: 5px;">${otp}</h2>
+                    </div>
+                    <p style="font-size: 14px; color: #777;">Valid for 10 minutes</p>
+                  </div>
+                </div>
             `
         });
 
