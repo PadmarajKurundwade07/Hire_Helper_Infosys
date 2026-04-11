@@ -40,7 +40,7 @@
                     <div class="info-group form-grid-full">
                         <label>{{ labels.emailAddress || 'Email Address' }} <span style="font-size: 0.8em; color: gray;">(Cannot be changed)</span></label>
                         <div class="info-value" *ngIf="!isEditing">{{ user.email_id }}</div>
-                        <input *ngIf="isEditing" type="email" [value]="user.email_id" name="email_id" class="form-control" disabled style="background-color: #eee; cursor: not-allowed !important; pointer-events: none;">
+                        <input *ngIf="isEditing" type="email" [value]="user.email_id" name="email_id" class="form-control email-disabled" readonly>
                     </div>
 
                     <div class="info-group form-grid-full">
