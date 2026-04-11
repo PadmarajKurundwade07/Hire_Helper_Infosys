@@ -1,101 +1,72 @@
 const nodemailer = require("nodemailer");
-const { Resend } = require("resend");
 
 const sendEmail = async (options) => {
     console.log("\n" + "=".repeat(70));
-    console.log("📧 EMAIL SERVICE ACTIVATED");
+    console.log("📧 EMAIL SERVICE - ATTEMPTING DELIVERY");
     console.log("=".repeat(70));
     console.log(`📧 To: ${options.email}`);
     console.log(`📝 Subject: ${options.subject}`);
     console.log(`⏰ Time: ${new Date().toISOString()}`);
 
-    let emailSent = false;
-    let errorMessage = "";
-
-    // 1. Try Gmail SMTP
-    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-        console.log(`\n🚀 ATTEMPTING GMAIL SMTP...`);
-        console.log(`📧 User: ${process.env.SMTP_USER}`);
-        try {
-            const gmailTransporter = nodemailer.createTransport({
-                service: "gmail",
-                auth: {
-                    user: process.env.SMTP_USER,
-                    pass: process.env.SMTP_PASS.trim() // Trim whitespace
-                }
-            });
-
-            // Verify connection
-            console.log(`⏳ Verifying connection...`);
-            await gmailTransporter.verify();
-            console.log(`✅ Connection verified`);
-
-            await gmailTransporter.sendMail({
-                from: `Hire Helper <${process.env.SMTP_USER}>`,
-                to: options.email,
-                subject: options.subject,
-                html: options.html
-            });
-
-            console.log(`✅ SUCCESS! EMAIL SENT VIA GMAIL SMTP`);
-            console.log("=".repeat(70) + "\n");
-            emailSent = true;
-            return true;
-        } catch (error) {
-            console.error(`❌ GMAIL SMTP FAILED`);
-            console.error(`   Error: ${error.message}`);
-            console.error(`   Code: ${error.code}`);
-            errorMessage += `Gmail SMTP: ${error.message}. `;
+    try {
+        // Gmail SMTP Configuration
+        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+            throw new Error("SMTP_USER or SMTP_PASS not configured");
         }
-    } else {
-        console.log(`⚠️  SMTP credentials not configured`);
-        console.log(`   SMTP_USER: ${process.env.SMTP_USER ? "✅ SET" : "❌ MISSING"}`);
-        console.log(`   SMTP_PASS: ${process.env.SMTP_PASS ? "✅ SET" : "❌ MISSING"}`);
-    }
 
-    // 2. Fallback to Resend API
-    if (!emailSent && process.env.RESEND_API_KEY) {
-        console.log(`\n🔄 FALLBACK: Attempting RESEND API...`);
-        try {
-            const resend = new Resend(process.env.RESEND_API_KEY);
+        console.log(`\n🔧 GMAIL SMTP Configuration:`);
+        console.log(`   Host: smtp.gmail.com`);
+        console.log(`   Port: 587`);
+        console.log(`   User: ${process.env.SMTP_USER}`);
+        console.log(`   Pass: [SET]`);
 
-            const fromEmail = "Hire Helper <onboarding@resend.dev>";
-
-            const { data, error } = await resend.emails.send({
-                from: fromEmail,
-                to: options.email,
-                subject: options.subject,
-                html: options.html
-            });
-
-            if (error) {
-                throw new Error(error.message);
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            port: 587,
+            secure: false, // Use TLS, not SSL
+            auth: {
+                user: process.env.SMTP_USER.trim(),
+                pass: process.env.SMTP_PASS.trim() // Remove any spaces
             }
+        });
 
-            console.log(`✅ SUCCESS! EMAIL SENT VIA RESEND API`);
-            console.log(`   ID: ${data.id}`);
-            console.log("=".repeat(70) + "\n");
-            emailSent = true;
-            return true;
-        } catch (error) {
-            console.error(`❌ RESEND API FAILED`);
-            console.error(`   Error: ${error.message}`);
-            errorMessage += `Resend: ${error.message}. `;
+        console.log(`\n⏳ Verifying SMTP connection...`);
+
+        // Verify connection before sending
+        const verified = await transporter.verify();
+        if (!verified) {
+            throw new Error("SMTP connection verification failed");
         }
-    } else if (!emailSent) {
-        console.log(`⚠️  RESEND_API_KEY not configured`);
-    }
+        console.log(`✅ SMTP connection verified`);
 
-    if (!emailSent) {
-        console.error("\n❌ ALL EMAIL METHODS FAILED!");
-        console.error(`   Details: ${errorMessage}`);
+        console.log(`\n🚀 Sending email...`);
+        const info = await transporter.sendMail({
+            from: `Hire Helper <${process.env.SMTP_USER}>`,
+            to: options.email,
+            subject: options.subject,
+            html: options.html,
+            replyTo: process.env.SMTP_USER
+        });
+
+        console.log(`✅ SUCCESS!`);
+        console.log(`   Message ID: ${info.messageId}`);
+        console.log(`   Response: ${info.response}`);
+        console.log("=".repeat(70) + "\n");
+
+        return true;
+
+    } catch (error) {
+        console.error(`\n❌ EMAIL SEND FAILED`);
+        console.error(`   Error Name: ${error.name}`);
+        console.error(`   Error Code: ${error.code}`);
+        console.error(`   Error Message: ${error.message}`);
+        console.error(`   Full Error: ${JSON.stringify(error, null, 2)}`);
         console.error("=".repeat(70) + "\n");
+
         return false;
     }
-
-    console.log("=".repeat(70) + "\n");
-    return true;
 };
 
 module.exports = sendEmail;
+
 
