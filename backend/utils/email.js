@@ -7,6 +7,7 @@ const sendEmail = async (options) => {
     console.log(`📧 To: ${options.email}`);
     console.log(`📝 Subject: ${options.subject}`);
     console.log(`⏰ Time: ${new Date().toISOString()}`);
+    console.log(`✓ HTML length: ${options.html ? options.html.length : 0} chars`);
 
     // Try Gmail SMTP first
     try {
@@ -52,6 +53,9 @@ const sendEmail = async (options) => {
                 throw new Error("RESEND_API_KEY not configured");
             }
 
+            console.log(`   API Key set: ✓`);
+            console.log(`   Endpoint: https://api.resend.com/emails`);
+
             const response = await fetch("https://api.resend.com/emails", {
                 method: "POST",
                 headers: {
@@ -66,9 +70,11 @@ const sendEmail = async (options) => {
                 })
             });
 
+            console.log(`   Response Status: ${response.status}`);
+
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(`Resend API error: ${JSON.stringify(errorData)}`);
+                throw new Error(`Resend API error (${response.status}): ${JSON.stringify(errorData)}`);
             }
 
             const result = await response.json();
