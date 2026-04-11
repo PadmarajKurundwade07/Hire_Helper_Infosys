@@ -8,38 +8,26 @@ const sendEmail = async (options) => {
     console.log(`📝 Subject: ${options.subject}`);
     console.log(`⏰ Time: ${new Date().toISOString()}`);
 
+    // Try Gmail SMTP first
     try {
-        // Gmail SMTP Configuration
         if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-            throw new Error("SMTP_USER or SMTP_PASS not configured");
+            throw new Error("SMTP_USER or SMTP_PASS not configured - skipping Gmail SMTP");
         }
 
-        console.log(`\n🔧 GMAIL SMTP Configuration:`);
+        console.log(`\n🔧 Attempting GMAIL SMTP...`);
         console.log(`   Host: smtp.gmail.com`);
         console.log(`   Port: 587`);
-        console.log(`   User: ${process.env.SMTP_USER}`);
-        console.log(`   Pass: [SET]`);
 
         const transporter = nodemailer.createTransport({
             service: "gmail",
             port: 587,
-            secure: false, // Use TLS, not SSL
+            secure: false,
             auth: {
                 user: process.env.SMTP_USER.trim(),
-                pass: process.env.SMTP_PASS.trim() // Remove any spaces
+                pass: process.env.SMTP_PASS.trim()
             }
         });
 
-        console.log(`\n⏳ Verifying SMTP connection...`);
-
-        // Verify connection before sending
-        const verified = await transporter.verify();
-        if (!verified) {
-            throw new Error("SMTP connection verification failed");
-        }
-        console.log(`✅ SMTP connection verified`);
-
-        console.log(`\n🚀 Sending email...`);
         const info = await transporter.sendMail({
             from: `Hire Helper <${process.env.SMTP_USER}>`,
             to: options.email,
@@ -48,22 +36,56 @@ const sendEmail = async (options) => {
             replyTo: process.env.SMTP_USER
         });
 
-        console.log(`✅ SUCCESS!`);
+        console.log(`✅ Gmail SMTP SUCCESS!`);
         console.log(`   Message ID: ${info.messageId}`);
-        console.log(`   Response: ${info.response}`);
         console.log("=".repeat(70) + "\n");
 
         return true;
 
-    } catch (error) {
-        console.error(`\n❌ EMAIL SEND FAILED`);
-        console.error(`   Error Name: ${error.name}`);
-        console.error(`   Error Code: ${error.code}`);
-        console.error(`   Error Message: ${error.message}`);
-        console.error(`   Full Error: ${JSON.stringify(error, null, 2)}`);
-        console.error("=".repeat(70) + "\n");
+    } catch (gmailError) {
+        console.error(`⚠️  Gmail SMTP failed: ${gmailError.message}`);
+        console.log(`\n🔄 Attempting RESEND API fallback...`);
 
-        return false;
+        // Fallback to Resend API
+        try {
+            if (!process.env.RESEND_API_KEY) {
+                throw new Error("RESEND_API_KEY not configured");
+            }
+
+            const response = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    from: "Hire Helper <onboarding@resend.dev>",
+                    to: options.email,
+                    subject: options.subject,
+                    html: options.html
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Resend API error: ${JSON.stringify(errorData)}`);
+            }
+
+            const result = await response.json();
+            console.log(`✅ Resend API SUCCESS!`);
+            console.log(`   Email ID: ${result.id}`);
+            console.log("=".repeat(70) + "\n");
+
+            return true;
+
+        } catch (resendError) {
+            console.error(`\n❌ BOTH EMAIL SERVICES FAILED`);
+            console.error(`   Gmail SMTP: ${gmailError.message}`);
+            console.error(`   Resend API: ${resendError.message}`);
+            console.error("=".repeat(70) + "\n");
+
+            return false;
+        }
     }
 };
 
