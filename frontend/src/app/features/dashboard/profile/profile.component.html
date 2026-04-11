@@ -172,3 +172,16 @@
             </div>
         </div>
 
+        <!-- Cancel Edit Confirmation Modal -->
+        <div class="cancel-modal-overlay" *ngIf="showCancelConfirmModal">
+            <div class="cancel-modal-content">
+                <h3 style="margin-top: 0; color: var(--text-color);">Cancel Edit?</h3>
+                <p style="color: #718096; margin-bottom: 20px;">Are you sure you want to cancel? Any unsaved changes will be lost.</p>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button (click)="cancelCancelEdit()" class="btn btn-cancel" type="button">Keep Editing</button>
+                    <button (click)="confirmCancelEdit()" class="btn btn-danger" type="button">Cancel Edit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+

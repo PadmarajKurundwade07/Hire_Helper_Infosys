@@ -30,6 +30,9 @@ export class ProfileComponent implements OnInit {
   apiUrl = environment.apiUrl;
   labels: any = {};
 
+  // Cancel edit confirmation
+  showCancelConfirmModal = false;
+
   // Password change with OTP
   showChangePasswordForm = false;
   passwordChangeVerified = false;
@@ -78,33 +81,27 @@ export class ProfileComponent implements OnInit {
 
   toggleEdit() {
     if (this.isEditing) {
-      // Use modal service instead of confirm
-      const modal = document.createElement('div');
-      modal.innerHTML = `
-        <div style="position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10000; text-align: center; min-width: 300px;">
-          <p style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Are you sure you want to cancel? Any unsaved changes will be lost.</p>
-          <div style="display: flex; gap: 10px; justify-content: center;">
-            <button onclick="document.querySelector('[data-confirm-cancel]').click();" style="padding: 8px 20px; background: #48bb78; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Cancel Edit</button>
-            <button onclick="document.querySelector('[data-confirm-keep]').click();" style="padding: 8px 20px; background: #e2e8f0; color: #333; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Keep Editing</button>
-          </div>
-        </div>
-      `;
-
-      if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-        this.isEditing = false;
-        this.fetchProfile();
-        this.selectedFile = null;
-        this.passwordInput = '';
-        this.confirmPasswordInput = '';
-        const storedProfDetails = localStorage.getItem('professionalDetails');
-        if (storedProfDetails) {
-          this.professionalDetails = JSON.parse(storedProfDetails);
-        }
-      }
+      this.showCancelConfirmModal = true;
     } else {
-      // User is entering edit mode
       this.isEditing = true;
     }
+  }
+
+  confirmCancelEdit() {
+    this.isEditing = false;
+    this.fetchProfile();
+    this.selectedFile = null;
+    this.passwordInput = '';
+    this.confirmPasswordInput = '';
+    this.showCancelConfirmModal = false;
+    const storedProfDetails = localStorage.getItem('professionalDetails');
+    if (storedProfDetails) {
+      this.professionalDetails = JSON.parse(storedProfDetails);
+    }
+  }
+
+  cancelCancelEdit() {
+    this.showCancelConfirmModal = false;
   }
 
   onFileSelected(event: any) {
