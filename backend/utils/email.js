@@ -9,86 +9,76 @@ const sendEmail = async (options) => {
     console.log(`⏰ Time: ${new Date().toISOString()}`);
     console.log(`✓ HTML length: ${options.html ? options.html.length : 0} chars`);
 
-    // Try Gmail SMTP first
+    // Try Resend API first
     try {
-        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-            throw new Error("SMTP_USER or SMTP_PASS not configured - skipping Gmail SMTP");
+        console.log(`\n🔄 Attempting CURRENT PRIMARY: RESEND API...`);
+        if (!process.env.RESEND_API_KEY) {
+            throw new Error("RESEND_API_KEY not configured");
         }
 
-        console.log(`\n🔧 Attempting GMAIL SMTP...`);
-        console.log(`   Host: smtp.gmail.com`);
-        console.log(`   Port: 587`);
+        const { Resend } = await import('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
 
-        const transporter = nodemailer.createTransport({
-            service: "gmail",
-            port: 587,
-            secure: false,
-            auth: {
-                user: process.env.SMTP_USER.trim(),
-                pass: process.env.SMTP_PASS.trim()
-            }
-        });
-
-        const info = await transporter.sendMail({
-            from: `Hire Helper <${process.env.SMTP_USER}>`,
+        console.log(`   API Key set: ✓`);
+        
+        const response = await resend.emails.send({
+            from: 'Hire Helper <onboarding@resend.dev>',
             to: options.email,
             subject: options.subject,
-            html: options.html,
-            replyTo: process.env.SMTP_USER
+            html: options.html
         });
+        
+        if (response.error) {
+            throw new Error(`Resend API error: ${JSON.stringify(response.error)}`);
+        }
 
-        console.log(`✅ Gmail SMTP SUCCESS!`);
-        console.log(`   Message ID: ${info.messageId}`);
+        console.log(`✅ Resend API SUCCESS!`);
+        console.log(`   Email ID: ${response.data.id}`);
         console.log("=".repeat(70) + "\n");
 
         return true;
 
-    } catch (gmailError) {
-        console.error(`⚠️  Gmail SMTP failed: ${gmailError.message}`);
-        console.log(`\n🔄 Attempting RESEND API fallback...`);
+    } catch (resendError) {
+        console.error(`⚠️  Resend API failed: ${resendError.message}`);
+        console.log(`\n🔧 Attempting FALLBACK: GMAIL SMTP...`);
 
-        // Fallback to Resend API
+        // Fallback to Gmail SMTP
         try {
-            if (!process.env.RESEND_API_KEY) {
-                throw new Error("RESEND_API_KEY not configured");
+            if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+                throw new Error("SMTP_USER or SMTP_PASS not configured - skipping Gmail SMTP");
             }
 
-            console.log(`   API Key set: ✓`);
-            console.log(`   Endpoint: https://api.resend.com/emails`);
+            console.log(`   Host: smtp.gmail.com`);
+            console.log(`   Port: 587`);
 
-            const response = await fetch("https://api.resend.com/emails", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    from: `Hire Helper <${process.env.EMAIL_FROM || 'onboarding@resend.dev'}>`,
-                    to: options.email,
-                    subject: options.subject,
-                    html: options.html
-                })
+            const transporter = nodemailer.createTransport({
+                service: "gmail",
+                port: 587,
+                secure: false,
+                auth: {
+                    user: process.env.SMTP_USER.trim(),
+                    pass: process.env.SMTP_PASS.trim()
+                }
             });
 
-            console.log(`   Response Status: ${response.status} ${response.statusText}`);
+            const info = await transporter.sendMail({
+                from: `Hire Helper <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+                to: options.email,
+                subject: options.subject,
+                html: options.html,
+                replyTo: process.env.SMTP_USER
+            });
 
-            const result = await response.json();
-            console.log(`   Response Body: ${JSON.stringify(result)}`);
-
-            if (!response.ok) {
-                throw new Error(`Resend API error (${response.status}): ${JSON.stringify(result)}`);
-            }
-
-            console.log(`✅ Resend API SUCCESS!`);
-            console.log(`   Email ID: ${result.id}`);
+            console.log(`✅ Gmail SMTP SUCCESS!`);
+            console.log(`   Message ID: ${info.messageId}`);
             console.log("=".repeat(70) + "\n");
 
             return true;
 
-        } catch (resendError) {
+        } catch (gmailError) {
             console.error(`\n❌ BOTH EMAIL SERVICES FAILED`);
-            console.error(`   Gmail SMTP: ${gmailError.message}`);
             console.error(`   Resend API: ${resendError.message}`);
+            console.error(`   Gmail SMTP: ${gmailError.message}`);
             console.error("=".repeat(70) + "\n");
 
             return false;

@@ -26,10 +26,12 @@ exports.register = async (req, res) => {
 
         // 4. Insert user into DB
         const newUserResult = await pool.query(
-            `INSERT INTO users (first_name, last_name, phone_number, email_id, password, otp, otp_expiry) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, first_name, email_id`,
-            [first_name, last_name, phone_number, email_id, hashedPassword, otp, otp_expiry]
+            `INSERT INTO users (first_name, last_name, phone_number, email_id, password) 
+       VALUES ($1, $2, $3, $4, $5) RETURNING id, first_name, email_id`,
+            [first_name, last_name, phone_number, email_id, hashedPassword]
         );
+
+        await pool.query('INSERT INTO otps (email, otp, expires_at) VALUES ($1, $2, $3)', [email_id, otp, otp_expiry]);
 
         const newUser = newUserResult.rows[0];
 
@@ -92,7 +94,7 @@ exports.login = async (req, res) => {
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
             const otp_expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-            await pool.query('UPDATE users SET otp = $1, otp_expiry = $2 WHERE id = $3', [otp, otp_expiry, user.id]);
+            await pool.query('INSERT INTO otps (email, otp, expires_at) VALUES ($1, $2, $3)', [email_id, otp, otp_expiry]);
 
             // Send Email
             const emailSent = await sendEmail({
@@ -128,7 +130,8 @@ exports.login = async (req, res) => {
         // 4. Generate JWT
         const payload = {
             user: {
-                id: user.id
+                id: user.id,
+                email: user.email_id
             }
         };
 
@@ -150,21 +153,27 @@ exports.verifyOtp = async (req, res) => {
             return res.status(400).json({ msg: 'User not found' });
         }
 
-        const user = userResult.rows[0];
+        const otpResult = await pool.query('SELECT * FROM otps WHERE email = $1 ORDER BY created_at DESC LIMIT 1', [email_id]);
+        if (otpResult.rows.length === 0) {
+            return res.status(400).json({ msg: 'No OTP found for this email' });
+        }
 
-        if (user.otp !== otp) {
+        const otpRecord = otpResult.rows[0];
+
+        if (otpRecord.otp !== otp) {
             return res.status(400).json({ msg: 'Invalid OTP' });
         }
 
-        if (new Date() > new Date(user.otp_expiry)) {
+        if (new Date() > new Date(otpRecord.expires_at)) {
             return res.status(400).json({ msg: 'OTP has expired' });
         }
 
-        // Mark as verified and clear OTP
+        // Mark as verified and clear OTP history
         await pool.query(
-            'UPDATE users SET is_verified = TRUE, otp = NULL, otp_expiry = NULL WHERE email_id = $1',
+            'UPDATE users SET is_verified = TRUE WHERE email_id = $1',
             [email_id]
         );
+        await pool.query('DELETE FROM otps WHERE email = $1', [email_id]);
 
         res.json({ msg: 'Email verified successfully. You can now login.' });
 
@@ -189,7 +198,7 @@ exports.forgotPassword = async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const otp_expiry = new Date(Date.now() + 10 * 60 * 1000);
 
-        await pool.query('UPDATE users SET otp = $1, otp_expiry = $2 WHERE id = $3', [otp, otp_expiry, user.id]);
+        await pool.query('INSERT INTO otps (email, otp, expires_at) VALUES ($1, $2, $3)', [email_id, otp, otp_expiry]);
 
         // Send password reset email
         const emailSent = await sendEmail({
@@ -247,13 +256,18 @@ exports.resetPassword = async (req, res) => {
             return res.status(400).json({ msg: 'User not found.' });
         }
 
-        const user = userResult.rows[0];
+        const otpResult = await pool.query('SELECT * FROM otps WHERE email = $1 ORDER BY created_at DESC LIMIT 1', [email_id]);
+        if (otpResult.rows.length === 0) {
+            return res.status(400).json({ msg: 'No OTP found for this email.' });
+        }
 
-        if (user.otp !== otp) {
+        const otpRecord = otpResult.rows[0];
+
+        if (otpRecord.otp !== otp) {
             return res.status(400).json({ msg: 'Invalid OTP.' });
         }
 
-        if (new Date() > new Date(user.otp_expiry)) {
+        if (new Date() > new Date(otpRecord.expires_at)) {
             return res.status(400).json({ msg: 'OTP has expired. Please request a new one.' });
         }
 
@@ -261,9 +275,10 @@ exports.resetPassword = async (req, res) => {
         const hashedPassword = await bcrypt.hash(new_password, salt);
 
         await pool.query(
-            'UPDATE users SET password = $1, otp = NULL, otp_expiry = NULL WHERE email_id = $2',
+            'UPDATE users SET password = $1 WHERE email_id = $2',
             [hashedPassword, email_id]
         );
+        await pool.query('DELETE FROM otps WHERE email = $1', [email_id]);
 
         res.json({ msg: 'Password reset successfully. You can now login with your new password.' });
     } catch (err) {

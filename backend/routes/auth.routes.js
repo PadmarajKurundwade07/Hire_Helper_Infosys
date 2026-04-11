@@ -22,22 +22,26 @@ router.post('/reset-password', authController.resetPassword);
 
 router.post("/send-change-password-otp", auth, async (req, res) => {
     try {
-        const userResult = await pool.query('SELECT email_id FROM users WHERE id = $1', [req.user.id]);
-        if (userResult.rows.length === 0) return res.status(404).json({ msg: 'User not found' });
+        let userEmail = req.user.email;
+        if (!userEmail) {
+            // Fallback for old tokens that don't have email in payload
+            const userResult = await pool.query('SELECT email_id FROM users WHERE id = $1', [req.user.id]);
+            if (userResult.rows.length === 0) return res.status(404).json({ msg: 'User not found' });
+            userEmail = userResult.rows[0].email_id;
+        }
 
-        const email = userResult.rows[0].email_id;
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const otp_expiry = new Date(Date.now() + 10 * 60 * 1000);
         
-        await pool.query('UPDATE users SET otp = $1, otp_expiry = $2 WHERE email_id = $3', [otp, otp_expiry, email]);
+        await pool.query('INSERT INTO otps (email, otp, expires_at) VALUES ($1, $2, $3)', [userEmail, otp, otp_expiry]);
         
         await sendEmail({
-            email: email,
-            subject: "Hire Helper Password Change OTP",
+            email: userEmail,
+            subject: "Hire Helper OTP Verification",
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
                   <div style="background-color: #4CAF50; padding: 20px; text-align: center;">
-                    <h1 style="color: #fff; margin: 0;">Password Reset Request</h1>
+                    <h1 style="color: #fff; margin: 0;">Hire Helper Security Verification</h1>
                   </div>
                   <div style="padding: 20px; text-align: center;">
                     <p style="font-size: 16px; color: #333;">We received a request to change your password.</p>
@@ -45,7 +49,7 @@ router.post("/send-change-password-otp", auth, async (req, res) => {
                     <div style="margin: 20px auto; padding: 15px; border-radius: 5px; background-color: #f4f4f4; border: 1px dashed #4CAF50; display: inline-block;">
                       <h2 style="margin: 0; color: #4CAF50; letter-spacing: 5px;">${otp}</h2>
                     </div>
-                    <p style="font-size: 14px; color: #777;">Valid for 10 minutes</p>
+                    <p style="font-size: 14px; color: #777;">This OTP is valid for 10 minutes.</p>
                   </div>
                 </div>
             `
