@@ -70,14 +70,15 @@ const sendEmail = async (options) => {
                 })
             });
 
-            console.log(`   Response Status: ${response.status}`);
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`Resend API error (${response.status}): ${JSON.stringify(errorData)}`);
-            }
+            console.log(`   Response Status: ${response.status} ${response.statusText}`);
 
             const result = await response.json();
+            console.log(`   Response Body: ${JSON.stringify(result)}`);
+
+            if (!response.ok) {
+                throw new Error(`Resend API error (${response.status}): ${JSON.stringify(result)}`);
+            }
+
             console.log(`✅ Resend API SUCCESS!`);
             console.log(`   Email ID: ${result.id}`);
             console.log("=".repeat(70) + "\n");
