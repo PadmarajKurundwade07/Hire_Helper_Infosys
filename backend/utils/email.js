@@ -1,57 +1,78 @@
 const nodemailer = require("nodemailer");
-
-// Initialize Gmail SMTP (PRIMARY)
-const gmailTransporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-    }
-});
+const { Resend } = require("resend");
 
 const sendEmail = async (options) => {
     console.log("\n" + "=".repeat(70));
-    console.log("📧 EMAIL SERVICE ACTIVATED - GMAIL SMTP");
+    console.log("📧 EMAIL SERVICE ACTIVATED");
     console.log("=".repeat(70));
 
-    try {
-        console.log(`⏰ Time: ${new Date().toISOString()}`);
-        console.log(`📧 Recipient: ${options.email}`);
-        console.log(`📝 Subject: ${options.subject}`);
+    let emailSent = false;
+    let errorMessage = "";
 
-        // Check environment variables
-        console.log("\n🔍 ENVIRONMENT CHECK:");
-        console.log(`  ✓ SMTP_USER: ${process.env.SMTP_USER ? "✅ SET" : "❌ MISSING"}`);
-        console.log(`  ✓ SMTP_PASS: ${process.env.SMTP_PASS ? "✅ SET" : "❌ MISSING"}`);
+    // 1. Try Gmail SMTP
+    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+        console.log(`🚀 Attempting via GMAIL SMTP...`);
+        try {
+            const gmailTransporter = nodemailer.createTransport({
+                service: "gmail",
+                auth: {
+                    user: process.env.SMTP_USER,
+                    pass: process.env.SMTP_PASS
+                }
+            });
 
-        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-            throw new Error("CRITICAL: Gmail SMTP credentials missing from environment!");
+            await gmailTransporter.sendMail({
+                from: `Hire Helper <${process.env.SMTP_USER}>`,
+                to: options.email,
+                subject: options.subject,
+                html: options.html
+            });
+
+            console.log(`✅ SUCCESS! EMAIL SENT VIA GMAIL SMTP`);
+            emailSent = true;
+        } catch (error) {
+            console.error(`❌ GMAIL SMTP FAILED: ${error.message}`);
+            errorMessage += `Gmail Error: ${error.message}. `;
         }
+    }
 
-        console.log(`\n🚀 SENDING EMAIL VIA GMAIL SMTP...`);
+    // 2. Fallback to Resend API
+    if (!emailSent && process.env.RESEND_API_KEY) {
+        console.log(`🚀 Attempting fallback via RESEND API...`);
+        try {
+            const resend = new Resend(process.env.RESEND_API_KEY);
+            
+            // Resend requires a verified domain. Unless verified, you must use onboarding@resend.dev
+            // and you can only send to the email address registered with Resend.
+            const fromEmail = "Hire Helper <onboarding@resend.dev>";
 
-        // Send email via Gmail SMTP
-        await gmailTransporter.sendMail({
-            from: `Hire Helper <${process.env.SMTP_USER}>`,
-            to: options.email,
-            subject: options.subject,
-            html: options.html
-        });
+            const { data, error } = await resend.emails.send({
+                from: fromEmail,
+                to: options.email,
+                subject: options.subject,
+                html: options.html
+            });
 
-        console.log(`\n✅ SUCCESS! EMAIL SENT VIA GMAIL SMTP`);
-        console.log(`  📧 From: ${process.env.SMTP_USER}`);
-        console.log(`  📮 To: ${options.email}`);
-        console.log("=".repeat(70) + "\n");
+            if (error) {
+                throw new Error(error.message);
+            }
 
-        return true;
+            console.log(`✅ SUCCESS! EMAIL SENT VIA RESEND API (${data.id})`);
+            emailSent = true;
+        } catch (error) {
+            console.error(`❌ RESEND API FAILED: ${error.message}`);
+            errorMessage += `Resend Error: ${error.message}. `;
+        }
+    }
 
-    } catch (error) {
-        console.error(`\n❌ ERROR SENDING EMAIL VIA GMAIL SMTP`);
-        console.error(`  Error: ${error.message}`);
-        console.error(`  Type: ${error.name}`);
+    if (!emailSent) {
+        console.error("\n❌ ALL EMAIL SENDING METHODS FAILED!");
         console.error("=".repeat(70) + "\n");
         return false;
     }
+
+    console.log("=".repeat(70) + "\n");
+    return true;
 };
 
 module.exports = sendEmail;
