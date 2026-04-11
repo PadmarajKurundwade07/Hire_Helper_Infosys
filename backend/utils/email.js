@@ -63,7 +63,7 @@ const sendEmail = async (options) => {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    from: "Hire Helper <onboarding@resend.dev>",
+                    from: `Hire Helper <${process.env.EMAIL_FROM || 'onboarding@resend.dev'}>`,
                     to: options.email,
                     subject: options.subject,
                     html: options.html
