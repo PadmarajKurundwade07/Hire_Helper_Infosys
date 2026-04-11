@@ -40,7 +40,7 @@
                     <div class="info-group form-grid-full">
                         <label>{{ labels.emailAddress || 'Email Address' }} <span style="font-size: 0.8em; color: gray;">(Cannot be changed)</span></label>
                         <div class="info-value" *ngIf="!isEditing">{{ user.email_id }}</div>
-                        <input *ngIf="isEditing" type="email" [value]="user.email_id" name="email_id" class="form-control email-disabled" readonly>
+                        <input *ngIf="isEditing" type="email" [value]="user.email" readonly class="email-disabled" />
                     </div>
 
                     <div class="info-group form-grid-full">
@@ -173,8 +173,8 @@
         </div>
 
         <!-- Cancel Edit Confirmation Modal -->
-        <div class="cancel-modal-overlay" *ngIf="showCancelConfirmModal">
-            <div class="cancel-modal-content">
+        <div class="modal-overlay" *ngIf="showCancelConfirmModal">
+            <div class="modal-box">
                 <h3 style="margin-top: 0; color: var(--text-color);">Cancel Edit?</h3>
                 <p style="color: #718096; margin-bottom: 20px;">Are you sure you want to cancel? Any unsaved changes will be lost.</p>
                 <div style="display: flex; gap: 10px; justify-content: flex-end;">

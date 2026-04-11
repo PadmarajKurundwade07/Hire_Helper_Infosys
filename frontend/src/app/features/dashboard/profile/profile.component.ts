@@ -120,31 +120,31 @@ export class ProfileComponent implements OnInit {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('first_name', this.user.first_name || '');
-    formData.append('last_name', this.user.last_name || '');
-    formData.append('email_id', this.user.email_id || '');
-    formData.append('phone_number', this.user.phone_number || '');
+    const data = {
+      first_name: this.user.first_name || '',
+      last_name: this.user.last_name || '',
+      phone_number: this.user.phone_number || '',
+      skills: this.professionalDetails.skills || '',
+      hourly_rate: this.professionalDetails.hourlyRate || '',
+      availability: this.professionalDetails.availability || '',
+      portfolio_url: this.professionalDetails.portfolioUrl || ''
+    };
 
-    if (this.passwordInput && this.passwordInput.trim() && !this.passwordMismatch) {
-      formData.append('password', this.passwordInput);
-    }
+    console.log('Saving profile with:', data);
 
-    if (this.selectedFile) {
-      formData.append('profile_picture', this.selectedFile);
-    }
-
-    console.log('Saving profile with:', { first_name: this.user.first_name, last_name: this.user.last_name, phone_number: this.user.phone_number });
-
-    this.authService.updateProfile(formData).subscribe({
+    this.authService.updateProfile(data).subscribe({
       next: (res) => {
         console.log('Profile updated successfully:', res);
-        this.user = res;
         this.isEditing = false;
-        this.passwordInput = '';
-        this.confirmPasswordInput = '';
-        this.selectedFile = null;
+        
         localStorage.setItem('professionalDetails', JSON.stringify(this.professionalDetails));
+        
+        // Update user cache
+        this.user.first_name = data.first_name;
+        this.user.last_name = data.last_name;
+        this.user.phone_number = data.phone_number;
+        localStorage.setItem('user', JSON.stringify(this.user));
+
         this.modalService.show('Success', 'Profile updated successfully!', 'success');
       },
       error: (err) => {
@@ -163,7 +163,7 @@ export class ProfileComponent implements OnInit {
     this.confirmPasswordForChange = '';
 
     // Call forgot password endpoint to send OTP
-    this.authService.forgotPassword(this.user.email_id).subscribe({
+    this.authService.sendChangePasswordOtp().subscribe({
       next: () => {
         this.modalService.show('Success', 'OTP has been sent to your email!', 'success');
       },

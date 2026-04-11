@@ -37,6 +37,12 @@ export class AuthService {
     );
   }
 
+  sendChangePasswordOtp(): Observable<any> {
+    return this.http.post(`${this.apiUrl}/send-change-password-otp`, {}).pipe(
+      timeout(this.requestTimeout)
+    );
+  }
+
   resetPassword(email_id: string, otp: string, new_password: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/reset-password`, {
       email_id,
@@ -68,14 +74,9 @@ export class AuthService {
     );
   }
 
-  updateProfile(formData: FormData): Observable<any> {
-    return this.http.put(`${environment.apiUrl}/users/me`, formData).pipe(
-      timeout(this.requestTimeout),
-      tap((res: any) => {
-        if (res) {
-          localStorage.setItem('user', JSON.stringify(res));
-        }
-      })
+  updateProfile(data: any): Observable<any> {
+    return this.http.put(`${environment.apiUrl}/users/profile`, data).pipe(
+      timeout(this.requestTimeout)
     );
   }
 
