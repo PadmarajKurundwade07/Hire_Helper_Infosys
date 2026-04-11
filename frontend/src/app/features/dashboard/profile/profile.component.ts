@@ -33,6 +33,9 @@ export class ProfileComponent implements OnInit {
   // Cancel edit confirmation
   showCancelConfirmModal = false;
 
+  // Save edit confirmation
+  showSaveConfirmModal = false;
+
   // Password change with OTP
   showChangePasswordForm = false;
   passwordChangeVerified = false;
@@ -109,16 +112,21 @@ export class ProfileComponent implements OnInit {
     if (file) this.selectedFile = file;
   }
 
-  saveProfile() {
+  triggerSaveProfile() {
     if (this.passwordMismatch) {
       this.modalService.show('Error', this.labels.passwordMismatch || 'Passwords do not match!', 'error');
       return;
     }
 
-    // Ask for confirmation before saving
-    if (!confirm('Are you sure you want to save these changes?')) {
-      return;
-    }
+    this.showSaveConfirmModal = true;
+  }
+
+  cancelSaveProfile() {
+    this.showSaveConfirmModal = false;
+  }
+
+  executeSaveProfile() {
+    this.showSaveConfirmModal = false;
 
     const data = {
       first_name: this.user.first_name || '',

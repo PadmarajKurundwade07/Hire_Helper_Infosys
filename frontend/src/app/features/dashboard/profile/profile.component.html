@@ -12,7 +12,7 @@
             </div>
         </div>
 
-        <form (ngSubmit)="saveProfile()" #profileForm="ngForm">
+        <form (ngSubmit)="triggerSaveProfile()" #profileForm="ngForm">
             <div class="profile-details">
                 <div class="avatar-container">
                     <div class="avatar-large" *ngIf="!user.profile_picture">
@@ -40,7 +40,7 @@
                     <div class="info-group form-grid-full">
                         <label>{{ labels.emailAddress || 'Email Address' }} <span style="font-size: 0.8em; color: gray;">(Cannot be changed)</span></label>
                         <div class="info-value" *ngIf="!isEditing">{{ user.email_id }}</div>
-                        <input *ngIf="isEditing" type="email" [value]="user.email" readonly class="email-disabled" />
+                        <input *ngIf="isEditing" type="email" [value]="user.email_id" readonly class="form-control email-disabled" />
                     </div>
 
                     <div class="info-group form-grid-full">
@@ -171,17 +171,30 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Cancel Edit Confirmation Modal -->
-        <div class="modal-overlay" *ngIf="showCancelConfirmModal">
-            <div class="modal-box">
-                <h3 style="margin-top: 0; color: var(--text-color);">Cancel Edit?</h3>
-                <p style="color: #718096; margin-bottom: 20px;">Are you sure you want to cancel? Any unsaved changes will be lost.</p>
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button (click)="cancelCancelEdit()" class="btn btn-cancel" type="button">Keep Editing</button>
-                    <button (click)="confirmCancelEdit()" class="btn btn-danger" type="button">Cancel Edit</button>
-                </div>
+    <!-- Cancel Edit Confirmation Modal -->
+    <div class="modal-overlay" *ngIf="showCancelConfirmModal">
+        <div class="modal-box">
+            <h3 style="margin-top: 0; color: var(--text-color);">Cancel Edit?</h3>
+            <p style="color: #718096; margin-bottom: 20px;">Are you sure you want to cancel? Any unsaved changes will be lost.</p>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button (click)="cancelCancelEdit()" class="btn btn-cancel" type="button">Keep Editing</button>
+                <button (click)="confirmCancelEdit()" class="btn btn-danger" type="button">Cancel Edit</button>
             </div>
         </div>
     </div>
+
+    <!-- Save Edit Confirmation Modal -->
+    <div class="modal-overlay" *ngIf="showSaveConfirmModal">
+        <div class="modal-box">
+            <h3 style="margin-top: 0; color: var(--text-color);">Save Changes?</h3>
+            <p style="color: #718096; margin-bottom: 20px;">Are you sure you want to save these changes?</p>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button (click)="cancelSaveProfile()" class="btn btn-cancel" type="button">Cancel</button>
+                <button (click)="executeSaveProfile()" class="btn btn-success" type="button">Save Profile</button>
+            </div>
+        </div>
+    </div>
+</div>
 
