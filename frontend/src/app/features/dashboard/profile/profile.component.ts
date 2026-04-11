@@ -121,15 +121,24 @@ export class ProfileComponent implements OnInit {
     }
 
     const formData = new FormData();
-    formData.append('first_name', this.user.first_name);
-    formData.append('last_name', this.user.last_name);
-    formData.append('email_id', this.user.email_id);
-    if (this.user.phone_number) formData.append('phone_number', this.user.phone_number);
-    if (this.passwordInput && !this.passwordMismatch) formData.append('password', this.passwordInput);
-    if (this.selectedFile) formData.append('profile_picture', this.selectedFile);
+    formData.append('first_name', this.user.first_name || '');
+    formData.append('last_name', this.user.last_name || '');
+    formData.append('email_id', this.user.email_id || '');
+    formData.append('phone_number', this.user.phone_number || '');
+
+    if (this.passwordInput && this.passwordInput.trim() && !this.passwordMismatch) {
+      formData.append('password', this.passwordInput);
+    }
+
+    if (this.selectedFile) {
+      formData.append('profile_picture', this.selectedFile);
+    }
+
+    console.log('Saving profile with:', { first_name: this.user.first_name, last_name: this.user.last_name, phone_number: this.user.phone_number });
 
     this.authService.updateProfile(formData).subscribe({
       next: (res) => {
+        console.log('Profile updated successfully:', res);
         this.user = res;
         this.isEditing = false;
         this.passwordInput = '';
@@ -139,8 +148,8 @@ export class ProfileComponent implements OnInit {
         this.modalService.show('Success', 'Profile updated successfully!', 'success');
       },
       error: (err) => {
-        console.error(err);
-        this.modalService.show('Error', 'Failed to update profile.', 'error');
+        console.error('Error updating profile:', err);
+        this.modalService.show('Error', err.error?.msg || 'Failed to update profile.', 'error');
       }
     });
   }

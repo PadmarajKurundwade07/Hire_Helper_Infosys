@@ -52,21 +52,24 @@ router.put('/me', auth, upload.single('profile_picture'), async (req, res) => {
 
         let currentUser = userResult.rows[0];
 
-        // Preserve existing data if not updated
-        first_name = first_name || currentUser.first_name;
-        last_name = last_name || currentUser.last_name;
-        email_id = email_id || currentUser.email_id;
-        phone_number = phone_number || currentUser.phone_number;
+        // Preserve existing data if not provided (only update if value is provided and not empty)
+        first_name = (first_name && first_name.trim()) ? first_name : currentUser.first_name;
+        last_name = (last_name && last_name.trim()) ? last_name : currentUser.last_name;
+        email_id = (email_id && email_id.trim()) ? email_id : currentUser.email_id;
+        phone_number = (phone_number && phone_number.trim()) ? phone_number : currentUser.phone_number;
         newProfilePic = newProfilePic || currentUser.profile_picture;
 
         let hashedPassword = currentUser.password;
-        if (password) {
+        if (password && password.trim()) {
+            if (password.length < 6) {
+                return res.status(400).json({ msg: 'Password must be at least 6 characters.' });
+            }
             const salt = await bcrypt.genSalt(10);
             hashedPassword = await bcrypt.hash(password, salt);
         }
 
         const updatedUser = await pool.query(
-            `UPDATE users SET first_name = $1, last_name = $2, email_id = $3, phone_number = $4, password = $5, profile_picture = $6 
+            `UPDATE users SET first_name = $1, last_name = $2, email_id = $3, phone_number = $4, password = $5, profile_picture = $6
              WHERE id = $7 RETURNING id, first_name, last_name, email_id, phone_number, profile_picture`,
             [first_name, last_name, email_id, phone_number, hashedPassword, newProfilePic, req.user.id]
         );
