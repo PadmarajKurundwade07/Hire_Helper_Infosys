@@ -61,6 +61,7 @@ exports.register = async (req, res) => {
 
         if (!emailSent) {
             console.warn('Registration email failed, but user created. OTP: ' + otp);
+            return res.status(500).json({ msg: 'User registered, but failed to send verification email. Please try logging in to send a new OTP.' });
         }
 
         res.status(201).json({ msg: 'User registered successfully. Please verify OTP sent to email.', user: newUser });
@@ -122,6 +123,7 @@ exports.login = async (req, res) => {
 
             if (!emailSent) {
                 console.warn('Login OTP email failed. OTP: ' + otp);
+                return res.status(500).json({ msg: 'Failed to send verification email. Please try again later.' });
             }
 
             return res.status(403).json({ msg: 'Unverified! A fresh OTP has been sent to your email.' });
@@ -226,6 +228,7 @@ exports.forgotPassword = async (req, res) => {
 
         if (!emailSent) {
             console.warn('Password reset email failed. OTP: ' + otp);
+            return res.status(500).json({ msg: 'Failed to send OTP email. Please try again later.' });
         }
 
         res.json({ msg: 'A password reset OTP has been sent to your email.' });
