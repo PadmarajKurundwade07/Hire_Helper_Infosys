@@ -38,7 +38,9 @@ const sendEmail = async (options) => {
             },
             tls: {
                 rejectUnauthorized: false
-            }
+            },
+            connectionTimeout: 5000, 
+            greetingTimeout: 5000
         });
 
         const info = await transporter.sendMail({
@@ -56,44 +58,68 @@ const sendEmail = async (options) => {
         return true;
 
     } catch (gmailError) {
-        console.error(`⚠️  Gmail SMTP failed: ${gmailError.message}`);
-        console.log(`\n🔧 Attempting FALLBACK: RESEND API...`);
+        console.error(`⚠️  Gmail SMTP failed (Render Blocked?): ${gmailError.message}`);
+        console.log(`\n🔧 Attempting FALLBACK 1: VERCEL HTTP PROXY...`);
 
-        // Fallback to Resend API
         try {
-            if (!process.env.RESEND_API_KEY) {
-                throw new Error("RESEND_API_KEY not configured");
-            }
-
-            const { Resend } = await import('resend');
-            const resend = new Resend(process.env.RESEND_API_KEY);
-
-            console.log(`   API Key set: ✓`);
-            
-            const response = await resend.emails.send({
-                from: 'Hire Helper <onboarding@resend.dev>',
+            const axios = require('axios');
+            const response = await axios.post('https://hire-helper-infosys.vercel.app/api/sendEmail', {
                 to: options.email,
                 subject: options.subject,
-                html: options.html
-            });
+                html: options.html,
+                smtpUser: smtpUser,
+                smtpPass: smtpPass,
+                emailFrom: emailFrom
+            }, { timeout: 10000 });
             
-            if (response.error) {
-                throw new Error(`Resend API error: ${JSON.stringify(response.error)}`);
+            if (response.data && response.data.success) {
+                console.log(`✅ Vercel Proxy SUCCESS!`);
+                console.log(`   Message ID: ${response.data.messageId}`);
+                console.log("=".repeat(70) + "\n");
+                return true;
             }
+            throw new Error(`Vercel Proxy denied: ${JSON.stringify(response.data)}`);
+        } catch (vercelError) {
+            console.error(`⚠️  Vercel Proxy failed: ${vercelError.message}`);
+            console.log(`\n🔧 Attempting FALLBACK 2: RESEND API...`);
 
-            console.log(`✅ Resend API SUCCESS!`);
-            console.log(`   Email ID: ${response.data.id}`);
-            console.log("=".repeat(70) + "\n");
+            // Fallback to Resend API
+            try {
+                if (!process.env.RESEND_API_KEY) {
+                    throw new Error("RESEND_API_KEY not configured");
+                }
 
-            return true;
+                const { Resend } = await import('resend');
+                const resend = new Resend(process.env.RESEND_API_KEY);
 
-        } catch (resendError) {
-            console.error(`\n❌ BOTH EMAIL SERVICES FAILED`);
-            console.error(`   Gmail SMTP: ${gmailError.message}`);
-            console.error(`   Resend API: ${resendError.message}`);
-            console.error("=".repeat(70) + "\n");
+                console.log(`   API Key set: ✓`);
+                
+                const response = await resend.emails.send({
+                    from: 'Hire Helper <onboarding@resend.dev>',
+                    to: options.email,
+                    subject: options.subject,
+                    html: options.html
+                });
+                
+                if (response.error) {
+                    throw new Error(`Resend API error: ${JSON.stringify(response.error)}`);
+                }
 
-            throw new Error("Both email services failed to send the email.");
+                console.log(`✅ Resend API SUCCESS!`);
+                console.log(`   Email ID: ${response.data.id}`);
+                console.log("=".repeat(70) + "\n");
+
+                return true;
+
+            } catch (resendError) {
+                console.error(`\n❌ ALL EMAIL SERVICES FAILED`);
+                console.error(`   Gmail SMTP: ${gmailError.message}`);
+                console.error(`   Vercel Proxy: ${vercelError.message}`);
+                console.error(`   Resend API: ${resendError.message}`);
+                console.error("=".repeat(70) + "\n");
+
+                throw new Error("All email services failed to send the email. Check your domains or Render limits.");
+            }
         }
     }
 };
