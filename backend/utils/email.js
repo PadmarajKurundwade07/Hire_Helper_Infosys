@@ -22,12 +22,12 @@ const sendEmail = async (options) => {
         }
 
         console.log(`   Host: smtp.gmail.com`);
-        console.log(`   Port: 587`);
+        console.log(`   Port: 465`);
 
         const transporter = nodemailer.createTransport({
             service: "gmail",
-            port: 587,
-            secure: false, // true for 465, false for other ports
+            port: 465,
+            secure: true, // true for 465, false for other ports
             auth: {
                 user: smtpUser,
                 pass: smtpPass
