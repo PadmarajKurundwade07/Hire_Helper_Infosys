@@ -1,4 +1,8 @@
 const nodemailer = require("nodemailer");
+const dns = require('dns');
+
+// Force IPv4 resolution first, which fixes timeouts on Render when connecting to Google's IPv6 SMTP
+dns.setDefaultResultOrder('ipv4first');
 
 const sendEmail = async (options) => {
     console.log("\n" + "=".repeat(70));
@@ -25,12 +29,15 @@ const sendEmail = async (options) => {
         console.log(`   Port: 465`);
 
         const transporter = nodemailer.createTransport({
-            service: "gmail",
+            host: 'smtp.gmail.com',
             port: 465,
             secure: true, // true for 465, false for other ports
             auth: {
                 user: smtpUser,
                 pass: smtpPass
+            },
+            tls: {
+                rejectUnauthorized: false
             }
         });
 
