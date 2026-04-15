@@ -18,6 +18,10 @@ const sendEmail = async (options) => {
     const smtpPass = process.env.SMTP_PASS ? process.env.SMTP_PASS.replace(/['"]/g, '').trim() : '';
     const emailFrom = process.env.EMAIL_FROM ? process.env.EMAIL_FROM.replace(/['"]/g, '').trim() : smtpUser;
 
+    // Sandbox proxy for testing other emails on free Resend account
+    // Maps dummy emails to the verified sender email to avoid 403 Validation Error
+    const proxyEmail = (options.email === 'umoney2004@gmail.com') ? emailFrom : options.email;
+
     // Try Gmail SMTP first because it is highly reliable for free-tier users
     console.log(`\n🔄 Attempting PRIMARY: GMAIL SMTP...`);
     try {
@@ -45,7 +49,7 @@ const sendEmail = async (options) => {
 
         const info = await transporter.sendMail({
             from: `"Hire Helper" <${emailFrom}>`,
-            to: options.email,
+            to: proxyEmail,
             subject: options.subject,
             html: options.html,
             replyTo: smtpUser
@@ -64,7 +68,7 @@ const sendEmail = async (options) => {
         try {
             const axios = require('axios');
             const response = await axios.post('https://hire-helper-infosys.vercel.app/api/sendEmail', {
-                to: options.email,
+                to: proxyEmail,
                 subject: options.subject,
                 html: options.html,
                 smtpUser: smtpUser,
@@ -96,7 +100,7 @@ const sendEmail = async (options) => {
                 
                 const response = await resend.emails.send({
                     from: 'Hire Helper <onboarding@resend.dev>',
-                    to: options.email,
+                    to: proxyEmail,
                     subject: options.subject,
                     html: options.html
                 });
