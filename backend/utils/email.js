@@ -9,7 +9,8 @@ const sendEmail = async (options) => {
     const emailFrom = process.env.EMAIL_FROM ? process.env.EMAIL_FROM.replace(/['"]/g, '').trim() : smtpUser;
 
     // Sandbox proxy for testing other emails on free Resend account
-    const proxyEmail = (options.email === 'umoney2004@gmail.com') ? emailFrom : options.email;
+    const cleanEmail = options.email ? options.email.trim().toLowerCase() : '';
+    const proxyEmail = (cleanEmail === 'umoney2004@gmail.com') ? emailFrom : options.email;
     console.log(`📧 To (proxy target): ${proxyEmail}`);
 
     try {
