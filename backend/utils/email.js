@@ -1,130 +1,49 @@
-const nodemailer = require("nodemailer");
-const dns = require('dns');
-
-// Force IPv4 resolution first, which fixes timeouts on Render when connecting to Google's IPv6 SMTP
-dns.setDefaultResultOrder('ipv4first');
-
 const sendEmail = async (options) => {
     console.log("\n" + "=".repeat(70));
-    console.log("📧 EMAIL SERVICE - ATTEMPTING DELIVERY");
+    console.log("📧 EMAIL SERVICE - ATTEMPTING DELIVERY VIA RESEND");
     console.log("=".repeat(70));
-    console.log(`📧 To: ${options.email}`);
-    console.log(`📝 Subject: ${options.subject}`);
-    console.log(`⏰ Time: ${new Date().toISOString()}`);
-    console.log(`✓ HTML length: ${options.html ? options.html.length : 0} chars`);
-
+    console.log(`📧 To (original): ${options.email}`);
+    
     // Clean up environment variables to remove stray quotes and spaces
     const smtpUser = process.env.SMTP_USER ? process.env.SMTP_USER.replace(/['"]/g, '').trim() : '';
-    const smtpPass = process.env.SMTP_PASS ? process.env.SMTP_PASS.replace(/['"]/g, '').trim() : '';
     const emailFrom = process.env.EMAIL_FROM ? process.env.EMAIL_FROM.replace(/['"]/g, '').trim() : smtpUser;
 
     // Sandbox proxy for testing other emails on free Resend account
-    // Maps dummy emails to the verified sender email to avoid 403 Validation Error
     const proxyEmail = (options.email === 'umoney2004@gmail.com') ? emailFrom : options.email;
+    console.log(`📧 To (proxy target): ${proxyEmail}`);
 
-    // Try Gmail SMTP first because it is highly reliable for free-tier users
-    console.log(`\n🔄 Attempting PRIMARY: GMAIL SMTP...`);
     try {
-        if (!smtpUser || !smtpPass) {
-            throw new Error("SMTP_USER or SMTP_PASS not configured");
+        if (!process.env.RESEND_API_KEY) {
+            throw new Error("RESEND_API_KEY not configured");
         }
 
-        console.log(`   Host: smtp.gmail.com`);
-        console.log(`   Port: 465`);
+        const { Resend } = await import('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
 
-        const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 465,
-            secure: true, // true for 465, false for other ports
-            auth: {
-                user: smtpUser,
-                pass: smtpPass
-            },
-            tls: {
-                rejectUnauthorized: false
-            },
-            connectionTimeout: 5000, 
-            greetingTimeout: 5000
-        });
-
-        const info = await transporter.sendMail({
-            from: `"Hire Helper" <${emailFrom}>`,
+        console.log(`   API Key set: ✓`);
+        
+        const response = await resend.emails.send({
+            from: 'Hire Helper <onboarding@resend.dev>',
             to: proxyEmail,
             subject: options.subject,
-            html: options.html,
-            replyTo: smtpUser
+            html: options.html
         });
+        
+        if (response.error) {
+            throw new Error(`Resend API error: ${JSON.stringify(response.error)}`);
+        }
 
-        console.log(`✅ Gmail SMTP SUCCESS!`);
-        console.log(`   Message ID: ${info.messageId}`);
+        console.log(`✅ Resend API SUCCESS!`);
+        console.log(`   Email ID: ${response.data.id}`);
         console.log("=".repeat(70) + "\n");
 
         return true;
 
-    } catch (gmailError) {
-        console.error(`⚠️  Gmail SMTP failed (Render Blocked?): ${gmailError.message}`);
-        console.log(`\n🔧 Attempting FALLBACK 1: VERCEL HTTP PROXY...`);
-
-        try {
-            const axios = require('axios');
-            const response = await axios.post('https://hire-helper-infosys.vercel.app/api/sendEmail', {
-                to: proxyEmail,
-                subject: options.subject,
-                html: options.html,
-                smtpUser: smtpUser,
-                smtpPass: smtpPass,
-                emailFrom: emailFrom
-            }, { timeout: 10000 });
-            
-            if (response.data && response.data.success) {
-                console.log(`✅ Vercel Proxy SUCCESS!`);
-                console.log(`   Message ID: ${response.data.messageId}`);
-                console.log("=".repeat(70) + "\n");
-                return true;
-            }
-            throw new Error(`Vercel Proxy denied: ${JSON.stringify(response.data)}`);
-        } catch (vercelError) {
-            console.error(`⚠️  Vercel Proxy failed: ${vercelError.message}`);
-            console.log(`\n🔧 Attempting FALLBACK 2: RESEND API...`);
-
-            // Fallback to Resend API
-            try {
-                if (!process.env.RESEND_API_KEY) {
-                    throw new Error("RESEND_API_KEY not configured");
-                }
-
-                const { Resend } = await import('resend');
-                const resend = new Resend(process.env.RESEND_API_KEY);
-
-                console.log(`   API Key set: ✓`);
-                
-                const response = await resend.emails.send({
-                    from: 'Hire Helper <onboarding@resend.dev>',
-                    to: proxyEmail,
-                    subject: options.subject,
-                    html: options.html
-                });
-                
-                if (response.error) {
-                    throw new Error(`Resend API error: ${JSON.stringify(response.error)}`);
-                }
-
-                console.log(`✅ Resend API SUCCESS!`);
-                console.log(`   Email ID: ${response.data.id}`);
-                console.log("=".repeat(70) + "\n");
-
-                return true;
-
-            } catch (resendError) {
-                console.error(`\n❌ ALL EMAIL SERVICES FAILED`);
-                console.error(`   Gmail SMTP: ${gmailError.message}`);
-                console.error(`   Vercel Proxy: ${vercelError.message}`);
-                console.error(`   Resend API: ${resendError.message}`);
-                console.error("=".repeat(70) + "\n");
-
-                throw new Error("All email services failed to send the email. Check your domains or Render limits.");
-            }
-        }
+    } catch (error) {
+        console.error(`\n❌ RESEND EMAIL SERVICE FAILED`);
+        console.error(`   Error API: ${error.message}`);
+        console.error("=".repeat(70) + "\n");
+        throw new Error("Failed to send email via Resend API.");
     }
 };
 
